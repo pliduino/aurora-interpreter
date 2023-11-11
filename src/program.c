@@ -106,14 +106,13 @@ void program_run(struct program *const program)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
-            int *var_type = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
             program_add_var(program, *var_type);
-            printf("Creating var %d\n", *var_type);
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
         {
-            int *index = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            int *type = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 4];
+            uint32_t *index = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
             switch (*type)
             {
             case I32:
@@ -123,12 +122,33 @@ void program_run(struct program *const program)
                 printf("%f\n", *(float *)(program->variables[*index]));
                 break;
             case INVALID:
-                printf("Invalid variable");
+                printf("Invalid variable type - Printing\n");
                 break;
             default:
+                printf("Invalid variable type - Printing\n");
                 break;
             }
-            printf("Printing var\n");
+        }
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_ASSIGN, COMMAND_BYTES))
+        {
+            int *assign_index = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
+            void *value = &parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES];
+            switch (*type)
+            {
+            case I32:
+                *(int32_t *)program->variables[*assign_index] = *(int32_t *)value;
+                break;
+            case F32:
+                *(float *)program->variables[*assign_index] = *(float *)value;
+                break;
+            case INVALID:
+                printf("Invalid variable type - Assign\n");
+                break;
+            default:
+                printf("Invalid variable type - Assign\n");
+                break;
+            }
         }
     }
 

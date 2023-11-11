@@ -126,58 +126,78 @@ struct token_list *lex_file(FILE *const file)
         token_list_destroy(token_list);
         return NULL;
     }
-
+    int line = 1;
     token_list->count = 0;
     for (size_t i = 0; i < word_count; i++)
     {
         if (strcmp(words[i], "var") == 0)
         {
-            struct token token = {.text = words[i], .type = CREATE_VAR};
+            struct token token = {.text = words[i], .type = CREATE_VAR, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == '+')
         {
-            struct token token = {.text = words[i], .type = ADD};
+            struct token token = {.text = words[i], .type = ADD, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == '-')
         {
-            struct token token = {.text = words[i], .type = SUBTRACT};
+            struct token token = {.text = words[i], .type = SUBTRACT, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == '*')
         {
-            struct token token = {.text = words[i], .type = MULTIPLY};
+            struct token token = {.text = words[i], .type = MULTIPLY, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == '/')
         {
-            struct token token = {.text = words[i], .type = DIVIDE};
+            struct token token = {.text = words[i], .type = DIVIDE, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == '=')
         {
-            struct token token = {.text = words[i], .type = ASSIGN};
+            struct token token = {.text = words[i], .type = ASSIGN, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] >= '0' && words[i][0] <= '9')
         {
-            struct token token = {.text = words[i], .type = NUMBER};
+            struct token token = {.text = words[i], .type = NUMBER, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (strcmp(words[i], "print") == 0)
         {
-            struct token token = {.text = words[i], .type = PRINT};
+            struct token token = {.text = words[i], .type = PRINT, .line = line};
             token_list_push_back(token_list, token);
         }
         else if (words[i][0] == ';')
         {
-            struct token token = {.text = words[i], .type = ENDLINE};
+            struct token token = {.text = words[i], .type = ENDLINE, .line = line};
+            token_list_push_back(token_list, token);
+        }
+        else if (words[i][0] == '(')
+        {
+            struct token token = {.text = words[i], .type = CALLER_START, .line = line};
+            token_list_push_back(token_list, token);
+        }
+        else if (words[i][0] == ')')
+        {
+            struct token token = {.text = words[i], .type = CALLER_END, .line = line};
+            token_list_push_back(token_list, token);
+        }
+        else if (words[i][0] == '{')
+        {
+            struct token token = {.text = words[i], .type = BLOCK_START, .line = line};
+            token_list_push_back(token_list, token);
+        }
+        else if (words[i][0] == '}')
+        {
+            struct token token = {.text = words[i], .type = BLOCK_END, .line = line};
             token_list_push_back(token_list, token);
         }
         else
         {
-            struct token token = {.text = words[i], .type = NAME};
+            struct token token = {.text = words[i], .type = NAME, .line = line};
             token_list_push_back(token_list, token);
         }
     }

@@ -10,6 +10,10 @@ enum token_type
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
+    CALLER_START,
+    CALLER_END,
+    BLOCK_START,
+    BLOCK_END,
     CREATE_VAR,
     ASSIGN,
     NUMBER,
@@ -20,6 +24,7 @@ enum token_type
 
 struct token
 {
+    int line;
     enum token_type type;
     char *text;
 };

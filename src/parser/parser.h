@@ -3,10 +3,13 @@
 
 #define WORD_SIZE 16
 
+#define ADDRESS_BYTES 4
+#define TYPE_BYTES 2
 #define COMMAND_BYTES 2
 
 #define C_EOP "\0\0"
 #define C_OPERATION "\0\5"
+#define C_ASSIGN "\0\4"
 #define C_CREATE_VAR "\0\10"
 #define C_PRINT "\0\15"
 
@@ -17,6 +20,9 @@ struct token_list;
 
 /*
 16 bytes
+2 4 4 2
+Assign pointer value type
+
 2 4
 CreateVar Type
 

@@ -1,11 +1,25 @@
 #include "parser.h"
 
 #include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "variable_array.h"
 #include "lexer/lexer.h"
 
-inline static void set_bytes(char *dst, char *src, size_t bytes)
+#define BUFFER 8
+
+struct parse_vars
+{
+    struct token **token_buffer;
+    size_t token_buffer_count;
+    struct variable_array *variable_array;
+    size_t cur_word;
+    char *parsed;
+};
+
+inline static void
+set_bytes(char *dst, char *src, size_t bytes)
 {
     for (size_t i = 0; i < bytes; i++)
     {
@@ -13,85 +27,160 @@ inline static void set_bytes(char *dst, char *src, size_t bytes)
     }
 }
 
+inline static void assign(struct parse_vars *parse_vars)
+{
+    if (parse_vars->token_buffer[0]->type != NAME)
+    {
+        fprintf(stderr, "%s:%d - Assign value is not a name!\n", __FILE__, __LINE__);
+        return;
+    }
+
+    int index = variable_array_find(parse_vars->variable_array, parse_vars->token_buffer[0]->text);
+    if (index < 0)
+    {
+        fprintf(stderr, "%s:%d - Variable does not exist!\n", __FILE__, __LINE__);
+        return;
+    }
+
+    if (parse_vars->token_buffer[2]->type == NUMBER)
+    {
+        enum variable_type type;
+        if (strchr(parse_vars->token_buffer[2]->text, '.') != NULL)
+        {
+            type = F32;
+        }
+        else
+        {
+            type = I32;
+        }
+        if (parse_vars->variable_array->data[index].type != type)
+        {
+            fprintf(stderr, "%d:%d - Invalid value assigned!\n", parse_vars->variable_array->data[index].type, type);
+            return;
+        }
+
+        int16_t two_byte_type = (int16_t)type;
+
+        // Assign
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_ASSIGN, COMMAND_BYTES);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&index, ADDRESS_BYTES);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);
+
+        switch (type)
+        {
+        case I32:
+            int32_t value_int = atoi(parse_vars->token_buffer[2]->text);
+            set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_int, 4);
+            break;
+
+        case F32:
+            float value_float = (float)atof(parse_vars->token_buffer[2]->text);
+            set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_float, 4);
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
 char *parse_tokens(struct token_list *token_list)
 {
-#define BUFFER 8
-    struct variable_array *variable_array = variable_array_init();
-    char *parsed = malloc(sizeof(char) * WORD_SIZE * BUFFER);
-    size_t cur_word = 0;
+    struct parse_vars parse_vars =
+        {
+            .variable_array = variable_array_init(),
+            .cur_word = 0,
+            .parsed = malloc(sizeof(char) * WORD_SIZE * BUFFER),
+            .token_buffer = malloc(sizeof(struct token *) * 16),
+            .token_buffer_count = 0,
+        };
 
-    struct token **token_buffer = malloc(sizeof(struct token *) * 16);
-    size_t token_buffer_count = 0;
     for (size_t i = 0; i < token_list->count; i++)
     {
         if (token_list->tokens[i].type == ENDLINE)
         {
-            if (token_buffer[0]->type == CREATE_VAR)
+            if (parse_vars.token_buffer[0]->type == CREATE_VAR)
             {
-                if (token_buffer_count != 3)
+                if (parse_vars.token_buffer_count != 3)
                 {
                     // program_print_error(program, "Invalid var format!\n");
-                    free(token_buffer);
                     return NULL;
                 }
-                if (token_buffer[1]->type != NAME || token_buffer[2]->type != NAME)
+                if (parse_vars.token_buffer[1]->type != NAME || parse_vars.token_buffer[2]->type != NAME)
                 {
                     // program_print_error(program, "Invalid var format!\n");
-                    free(token_buffer);
                     return NULL;
                 }
                 struct variable variable =
                     {
-                        .name = token_buffer[2]->text,
-                        .type = variable_type_from_string(token_buffer[1]->text),
+                        .name = parse_vars.token_buffer[2]->text,
+                        .type = variable_type_from_string(parse_vars.token_buffer[1]->text),
                     };
-                variable_array_add(variable_array, variable);
-
-                set_bytes(&parsed[cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);
-                set_bytes(&parsed[cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&variable.type, 4);
+                variable_array_add(parse_vars.variable_array, variable);
+                int16_t two_byte_type = (int16_t)variable.type;
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&two_byte_type, TYPE_BYTES);
             }
-            else if (token_buffer[0]->type == PRINT)
+            else if (parse_vars.token_buffer[0]->type == PRINT)
             {
-                set_bytes(&parsed[cur_word * WORD_SIZE], C_PRINT, COMMAND_BYTES);
-                int index = variable_array_find(variable_array, token_buffer[1]->text);
+                if (parse_vars.token_buffer_count < 4)
+                {
+                    fprintf(stderr, "%s:%d - Not enough tokens!\n", __FILE__, __LINE__);
+                    return NULL;
+                }
+                if (parse_vars.token_buffer[1]->type != CALLER_START)
+                {
+                    fprintf(stderr, "%s:%d - Caller Start unavailable!\n", __FILE__, __LINE__);
+                    return NULL;
+                }
+                if (parse_vars.token_buffer[parse_vars.token_buffer_count - 1]->type != CALLER_END)
+                {
+                    fprintf(stderr, "%s:%d - Caller end missing!\n", __FILE__, __LINE__);
+                    return NULL;
+                }
+
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_PRINT, COMMAND_BYTES);
+                int index = variable_array_find(parse_vars.variable_array, parse_vars.token_buffer[2]->text);
                 if (index < 0)
                 {
                     fprintf(stderr, "%s:%d - Variable does not exist!\n", __FILE__, __LINE__);
                 }
 
-                set_bytes(&parsed[cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&index, 4);
-                set_bytes(&parsed[cur_word * WORD_SIZE + COMMAND_BYTES + 4], (char *)&variable_array->data[index].type, 4);
+                int16_t two_byte_type = parse_vars.variable_array->data[index].type;
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&index, ADDRESS_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);
             }
-            else if (token_buffer[1]->type == ASSIGN)
+            else if (parse_vars.token_buffer[1]->type == ASSIGN)
             {
+                assign(&parse_vars);
             }
-            else if (token_buffer[1]->type == ADD)
+            else if (parse_vars.token_buffer[1]->type == ADD)
             {
-                set_bytes(&parsed[cur_word * WORD_SIZE], C_OPERATION, COMMAND_BYTES);
-                set_bytes(&parsed[cur_word * WORD_SIZE + COMMAND_BYTES], O_ADD, OPERATION_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_OPERATION, COMMAND_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], O_ADD, OPERATION_BYTES);
             }
             else
             {
                 fprintf(stderr, "%s:%d - Token does not exist!\n", __FILE__, __LINE__);
             }
 
-            token_buffer_count = 0;
-            cur_word++;
-            if (cur_word % BUFFER == 0)
+            parse_vars.token_buffer_count = 0;
+            parse_vars.cur_word++;
+            if (parse_vars.cur_word % BUFFER == 0)
             {
-                parsed = realloc(parsed, sizeof(char) * WORD_SIZE * (cur_word + BUFFER));
+                parse_vars.parsed = realloc(parse_vars.parsed, sizeof(char) * WORD_SIZE * (parse_vars.cur_word + BUFFER));
             }
         }
         else
         {
-            token_buffer[token_buffer_count] = &token_list->tokens[i];
-            token_buffer_count++;
+            parse_vars.token_buffer[parse_vars.token_buffer_count] = &token_list->tokens[i];
+            parse_vars.token_buffer_count++;
         }
     }
-    free(token_buffer);
-    variable_array_free(variable_array);
+    free(parse_vars.token_buffer);
+    variable_array_free(parse_vars.variable_array);
 
-    set_bytes(&parsed[cur_word * WORD_SIZE], C_EOP, COMMAND_BYTES);
-    return parsed;
-#undef BUFFER_SIZE
+    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_EOP, COMMAND_BYTES);
+    return parse_vars.parsed;
 }
+#undef BUFFER_SIZE
