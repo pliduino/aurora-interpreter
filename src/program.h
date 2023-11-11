@@ -18,12 +18,11 @@ struct program
 {
     FILE *fptr;
     const char *file_path;
-    struct variable_array *variables;
+    void **variables;
+    size_t variable_count;
     long long int cur_line;
     char options;
 };
-
-int handle_token_list(struct program *program, struct token_list *token_list);
 
 struct program *program_init(const char *const file_path);
 

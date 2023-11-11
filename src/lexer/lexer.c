@@ -31,13 +31,11 @@ char **separate_file(FILE *const file, size_t *word_count)
     {
         for (int i = 0; i < buffer_size; i++)
         {
-            putchar(buffer[i]);
             if (chrcmp(";()[]{}+-*/=<>&,", buffer[i]))
             {
                 // Adds word before symbol
                 if (count > 0)
                 {
-                    printf("adding - %zd", *word_count);
                     words[*word_count] = malloc(sizeof(char) * (count + 1));
                     strncpy(words[*word_count], &buffer[i - count], count);
                     words[*word_count][count] = '\0';

@@ -4,7 +4,15 @@
 
 #include "lexer/lexer.h"
 
-void *parse_tokens(struct token_list *token_list)
+inline static void set_bytes(char *dst, char *src, size_t bytes)
+{
+    for (size_t i = 0; i < bytes; i++)
+    {
+        dst[i] = src[i];
+    }
+}
+
+char *parse_tokens(struct token_list *token_list)
 {
 #define BUFFER 8
     char *parsed = malloc(sizeof(char) * WORD_SIZE * BUFFER);
@@ -30,11 +38,13 @@ void *parse_tokens(struct token_list *token_list)
                     free(token_buffer);
                     return NULL;
                 }
-                strncpy(&parsed[cur_word * WORD_SIZE], O_CREATE_VAR, COMMAND_BYTES);
-                strncpy(&parsed[cur_word * WORD_SIZE + 2], (char *)&token_list->tokens[1].type, 4);
+                set_bytes(&parsed[cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);
+                set_bytes(&parsed[cur_word * WORD_SIZE + 2], (char *)&token_buffer[1]->type, 4);
             }
             else if (token_buffer[0]->type == PRINT)
             {
+                set_bytes(&parsed[cur_word * WORD_SIZE], C_PRINT, COMMAND_BYTES);
+                set_bytes(&parsed[cur_word * WORD_SIZE + 2], (char *)&token_buffer[1]->type, 4);
             }
             else if (token_buffer[1]->type == ASSIGN)
             {
@@ -57,10 +67,9 @@ void *parse_tokens(struct token_list *token_list)
             token_buffer_count++;
         }
     }
-    // free(token_buffer);
+    free(token_buffer);
 
-    strncpy(&parsed[cur_word * WORD_SIZE], EOP, COMMAND_BYTES);
-    printf("TESTANDO4\n");
+    set_bytes(&parsed[cur_word * WORD_SIZE], C_EOP, COMMAND_BYTES);
     return parsed;
 #undef BUFFER_SIZE
 }

@@ -7,7 +7,6 @@
 #include <stdarg.h>
 #include <time.h>
 
-#include "variable_array.h"
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 
@@ -32,76 +31,55 @@ struct program *program_init(const char *const file_path)
         return NULL;
     }
 
-    program->variables = variable_array_init();
     program->cur_line = 0;
     return program;
 }
 
 /// @brief Adds variable to program
 /// @param program
-/// @param variable_name A copy is made, please free the original one if needed
 /// @param variable_type
-void program_add_var(const struct program *program, const char *const variable_name, enum variable_type variable_type)
+static void program_add_var(struct program *const program, size_t index, enum variable_type variable_type)
 {
-    struct variable variable;
-    size_t string_size = sizeof(char) * (strlen(variable_name) + 1);
-    variable.name = malloc(string_size);
-    strcpy_s(variable.name, string_size, variable_name);
-
-    variable.type = variable_type;
+    void *data = NULL;
     switch (variable_type)
     {
     case I32:
-        int32_t *data_int = malloc(sizeof(int32_t));
-        *data_int = 0;
-        variable.data = data_int;
+        data = malloc(sizeof(int32_t));
+        *((int32_t *)data) = 0;
         break;
     case F32:
-        float *data_float = malloc(sizeof(float));
-        *data_float = 0.0;
-        variable.data = data_float;
+        data = malloc(sizeof(float));
+        *((float *)data) = 0.0;
         break;
     case INVALID:
-        break;
+        return;
     default:
-        break;
+        return;
     }
 
-    variable_array_add(program->variables, variable);
-}
-
-struct variable *program_get_var(const struct program *const program, const char *const variable_name)
-{
-    for (size_t i = 0; i < program->variables->size; i++)
-    {
-        if (strcmp(variable_name, program->variables->data[i].name) == 0)
-        {
-            return &program->variables->data[i];
-        }
-    }
-
-    return NULL;
+    program->variable_count++;
+    program->variables = realloc(program->variables, sizeof(void *) * program->variable_count);
+    program->variables[program->variable_count - 1] = data;
 }
 
 int program_set_var(const struct program *const program, const char *const variable_name, const struct variable assign)
 {
-    struct variable *variable = program_get_var(program, variable_name);
 
-    if (variable == NULL)
-    {
-        program_print_error(program, "%s does not exist! Creating new variable and assigning value...\n", variable_name);
-        program_add_var(program, variable_name, assign.type);
-        return -2;
-    }
-
-    if (variable->type == assign.type)
-    {
-        variable->data = assign.data;
-        return 0;
-    }
-
-    program_print_error(program, "Trying to assign %s to %s:%s!\n", variable_type_to_string(assign.type), variable_type_to_string(variable->type), variable->name);
+    // program_print_error(program, "Trying to assign %s to %s:%s!\n", variable_type_to_string(assign.type), variable_type_to_string(variable->type), variable->name);
     return -1;
+}
+
+inline static int compare_bytes(char *x, char *y, size_t bytes)
+{
+    for (size_t i = 0; i < bytes; i++)
+    {
+        if (x[i] ^ y[i])
+        {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 void program_run(struct program *const program)
@@ -120,11 +98,15 @@ void program_run(struct program *const program)
         return;
     }
 
-    for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], EOP, COMMAND_BYTES) == 0; program->cur_line++)
+    for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
     {
-        if (strncmp(&parsed_program[0 * WORD_SIZE], O_CREATE_VAR, COMMAND_BYTES) == 0)
+        if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
-            printf("Creating var");
+            printf("Creating var\n");
+        }
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
+        {
+            printf("Printing var\n");
         }
     }
 
@@ -140,5 +122,5 @@ void program_run(struct program *const program)
 void program_close(const struct program *const program)
 {
     fclose(program->fptr);
-    variable_array_free(program->variables);
+    // variable_array_free(program->variables);
 }
