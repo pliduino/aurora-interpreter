@@ -31,6 +31,8 @@ struct program *program_init(const char *const file_path)
         return NULL;
     }
 
+    program->variables = NULL;
+    program->variable_count = 0;
     program->cur_line = 0;
     return program;
 }
@@ -38,7 +40,7 @@ struct program *program_init(const char *const file_path)
 /// @brief Adds variable to program
 /// @param program
 /// @param variable_type
-static void program_add_var(struct program *const program, size_t index, enum variable_type variable_type)
+static void program_add_var(struct program *const program, enum variable_type variable_type)
 {
     void *data = NULL;
     switch (variable_type)
@@ -52,8 +54,10 @@ static void program_add_var(struct program *const program, size_t index, enum va
         *((float *)data) = 0.0;
         break;
     case INVALID:
+        printf("invalid\n");
         return;
     default:
+        printf("invalid\n");
         return;
     }
 
@@ -102,10 +106,28 @@ void program_run(struct program *const program)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
-            printf("Creating var\n");
+            int *var_type = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            program_add_var(program, *var_type);
+            printf("Creating var %d\n", *var_type);
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
         {
+            int *index = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            int *type = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 4];
+            switch (*type)
+            {
+            case I32:
+                printf("%d\n", *(int32_t *)(program->variables[*index]));
+                break;
+            case F32:
+                printf("%f\n", *(float *)(program->variables[*index]));
+                break;
+            case INVALID:
+                printf("Invalid variable");
+                break;
+            default:
+                break;
+            }
             printf("Printing var\n");
         }
     }

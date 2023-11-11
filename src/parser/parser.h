@@ -10,6 +10,7 @@
 #define C_CREATE_VAR "\0\10"
 #define C_PRINT "\0\15"
 
+#define OPERATION_BYTES 2
 #define O_ADD "\0\1"
 
 struct token_list;

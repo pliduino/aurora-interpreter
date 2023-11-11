@@ -27,6 +27,8 @@ void variable_array_add(struct variable_array *const variable_array, struct vari
 
 struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index);
 
+int variable_array_find(const struct variable_array *const variable_array, const char *const name);
+
 void variable_array_free(struct variable_array *const variable_array);
 
 void variable_print(struct variable *variable);

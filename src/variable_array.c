@@ -30,6 +30,19 @@ struct variable *variable_array_get_index(const struct variable_array *const var
     return &variable_array->data[index];
 }
 
+int variable_array_find(const struct variable_array *const variable_array, const char *const name)
+{
+    for (size_t i = 0; i < variable_array->size; i++)
+    {
+        if (strcmp(variable_array->data[i].name, name) == 0)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void variable_array_free(struct variable_array *const variable_array)
 {
     for (size_t i = 0; i < variable_array->size; i++)
