@@ -146,7 +146,11 @@ void program_run(struct program *const program)
 
 int handle_token_list(struct program *program, struct token_list *token_list)
 {
-    printf("--- %d", token_list->tokens[0].type);
+    if (token_list->count == 0)
+    {
+        return 0;
+    }
+
     if (token_list->tokens[0].type == CREATE_VAR)
     {
         if (token_list->count != 3)

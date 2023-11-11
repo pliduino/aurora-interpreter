@@ -12,7 +12,7 @@ char **separate_string(const char *const string, size_t *word_count)
     (*word_count) = 0;
     for (int i = 0; i < strlen(string); i++)
     {
-        if (string[i] == ' ')
+        if (string[i] == ' ' || string[i] == '\n' || string[i] == '\r')
         {
             if (count > 0)
             {
@@ -47,7 +47,7 @@ char **separate_string(const char *const string, size_t *word_count)
     }
 
     return words;
-#undef BUFFER_SIZE 4
+#undef BUFFER_SIZE
 }
 
 struct token_list *lex_line(char *line)
