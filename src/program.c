@@ -105,15 +105,14 @@ int program_set_var(const struct program *const program, const char *const varia
 
 void program_run(struct program *const program)
 {
-    char line[256];
+    char line[256] = {0};
 
     clock_t exec_time;
     exec_time = clock();
-    while (fgets(line, 256, program->fptr))
+    while (fgets(line, 255, program->fptr))
     {
         program->cur_line++;
 
-        line[strcspn(line, "\r\n")] = 0;
         if (strlen(line) <= 0)
         {
             continue;
@@ -127,11 +126,10 @@ void program_run(struct program *const program)
             }
         }
         struct token_list *token_list = lex_line(line);
-        for (size_t i = 0; i < token_list->count; i++)
+        if (token_list == NULL)
         {
-            printf(" %s:%d", token_list->tokens[i].text, token_list->tokens[i].type);
+            continue;
         }
-        printf("\n");
 
         int result = handle_token_list(program, token_list);
         token_list_destroy(token_list);
@@ -148,6 +146,7 @@ void program_run(struct program *const program)
 
 int handle_token_list(struct program *program, struct token_list *token_list)
 {
+    printf("--- %d", token_list->tokens[0].type);
     if (token_list->tokens[0].type == CREATE_VAR)
     {
         if (token_list->count != 3)

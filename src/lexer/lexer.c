@@ -5,33 +5,32 @@
 
 char **separate_string(const char *const string, size_t *word_count)
 {
+#define BUFFER_SIZE 4
     int count = 0;
-    char **words = NULL;
+    char **words = malloc(sizeof(char **) * BUFFER_SIZE);
     char **temp = NULL;
-
     (*word_count) = 0;
-    for (size_t i = 0; i < strlen(string); i++)
+    for (int i = 0; i < strlen(string); i++)
     {
-        if (string[i] == ' ' || string[i] == '\n' || string[i] == '\r' || string[i] == EOF || string[i] == '\0')
+        if (string[i] == ' ')
         {
             if (count > 0)
             {
-                (*word_count)++;
-                temp = realloc(words, sizeof(char **) * (*word_count));
-                if (temp == NULL)
-                {
-                    fprintf(stderr, "%s:%d - Realloc crashed!", __FILE__, __LINE__);
-                    free(words);
-                    return NULL;
-                }
-                words = temp;
-                size_t string_size = sizeof(char) * (count + 1);
-
-                words[(*word_count) - 1] = malloc(string_size);
-                strncpy_s(words[(*word_count) - 1], sizeof(char) * (count + 1), &string[i - count], count);
-                words[(*word_count) - 1][count] = '\0';
-
+                words[*word_count] = malloc(sizeof(char) * (count + 1));
+                strncpy(words[*word_count], &string[i - count], count);
+                words[*word_count][count] = '\0';
                 count = 0;
+
+                (*word_count)++;
+                if (*word_count % BUFFER_SIZE == 0)
+                {
+                    temp = realloc(words, *word_count + BUFFER_SIZE);
+                    if (temp == NULL)
+                    {
+                        return NULL;
+                    }
+                    words = temp;
+                }
             }
             continue;
         }
@@ -39,29 +38,21 @@ char **separate_string(const char *const string, size_t *word_count)
     }
     if (count > 0)
     {
-        (*word_count)++;
-        temp = realloc(words, sizeof(char **) * (*word_count * 7));
-        if (temp == NULL)
-        {
-            fprintf(stderr, "%s:%d - Realloc crashed!", __FILE__, __LINE__);
-            free(words);
-            return NULL;
-        }
-        words = temp;
-        size_t string_size = sizeof(char) * (count + 1);
-        words[(*word_count) - 1] = malloc(string_size);
-        strncpy_s(&*words[(*word_count) - 1], sizeof(char) * (count + 1), &string[strlen(string) - count], count);
-        words[(*word_count) - 1][count] = '\0';
+        words[*word_count] = malloc(sizeof(char) * (count + 1));
+        strcpy(words[*word_count], &string[strlen(string) - count]);
+        words[*word_count][count] = '\0';
         count = 0;
+
+        (*word_count)++;
     }
 
     return words;
+#undef BUFFER_SIZE 4
 }
 
 struct token_list *lex_line(char *line)
 {
     struct token_list *token_list = token_list_init();
-    token_list->count = 0;
     size_t word_count;
     char **words = separate_string(line, &word_count);
     if (words == NULL)
@@ -70,9 +61,9 @@ struct token_list *lex_line(char *line)
         return NULL;
     }
 
+    token_list->count = 0;
     for (size_t i = 0; i < word_count; i++)
     {
-        printf("word %zd -- %s\n", i, words[i]);
         if (strcmp(words[i], "var") == 0)
         {
             struct token token = {.text = words[i], .type = CREATE_VAR};
@@ -117,8 +108,8 @@ void token_list_push_back(struct token_list *const token_list, const struct toke
 
 void token_list_destroy(struct token_list *const token_list)
 {
-    free(token_list->tokens);
-    free(token_list);
+    // free(token_list->tokens);
+    // free(token_list);
 }
 
 struct token_list *token_list_init()
