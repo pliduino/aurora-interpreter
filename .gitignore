@@ -1,0 +1,6 @@
+out/
+.vscode/
+
+.sconsign.dblite
+*.ar
+*.obj
