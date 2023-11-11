@@ -9,6 +9,7 @@
 
 #include "variable_array.h"
 #include "lexer/lexer.h"
+#include "parser/parser.h"
 
 void program_print_error(const struct program *const program, const char *const error_format, ...)
 {
@@ -105,109 +106,33 @@ int program_set_var(const struct program *const program, const char *const varia
 
 void program_run(struct program *const program)
 {
-    char line[256] = {0};
-
     clock_t exec_time;
     exec_time = clock();
-    while (fgets(line, 255, program->fptr))
+
+    struct token_list *token_list = lex_file(program->fptr);
+
+    char *parsed_program = parse_tokens(token_list);
+    token_list_destroy(token_list);
+
+    if (parsed_program == NULL)
     {
-        program->cur_line++;
+        fprintf(stderr, "%s:%d - Error while parsing!\n", __FILE__, __LINE__);
+        return;
+    }
 
-        if (strlen(line) <= 0)
+    for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], EOP, COMMAND_BYTES) == 0; program->cur_line++)
+    {
+        if (strncmp(&parsed_program[0 * WORD_SIZE], O_CREATE_VAR, COMMAND_BYTES) == 0)
         {
-            continue;
-        }
-        if (program->options & VERBOSE)
-        {
-            printf(">>%s", line);
-            if (line[strlen(line) - 1] != '\n' && line[strlen(line) - 1] != '\r')
-            {
-                printf("\n");
-            }
-        }
-        struct token_list *token_list = lex_line(line);
-        if (token_list == NULL)
-        {
-            continue;
-        }
-
-        int result = handle_token_list(program, token_list);
-        token_list_destroy(token_list);
-        if (result && program->options & STRICT)
-        {
-            break;
+            printf("Creating var");
         }
     }
+
+    free(parsed_program);
 
     exec_time = clock() - exec_time;
     double time_taken = (((double)exec_time) / CLOCKS_PER_SEC) * 1000;
     printf("\nExecution time: %.0fms\n", time_taken);
-}
-
-int handle_token_list(struct program *program, struct token_list *token_list)
-{
-    if (token_list->count == 0)
-    {
-        return 0;
-    }
-
-    if (token_list->tokens[0].type == CREATE_VAR)
-    {
-        if (token_list->count != 3)
-        {
-            program_print_error(program, "Invalid var format!\n");
-            return -1;
-        }
-        if (token_list->tokens[1].type != NAME || token_list->tokens[2].type != NAME)
-        {
-            program_print_error(program, "Invalid var format!\n");
-            return -1;
-        }
-        program_add_var(program, token_list->tokens[2].text, variable_type_from_string(token_list->tokens[1].text));
-        return 0;
-    }
-    if (token_list->tokens[0].type == PRINT)
-    {
-        struct variable *variable = program_get_var(program, token_list->tokens[1].text);
-        if (variable == NULL)
-        {
-            program_print_error(program, "Symbol %s does not exist!", token_list->tokens[1].text);
-            return -1;
-        }
-
-        variable_print(variable);
-        return 0;
-    }
-    if (token_list->tokens[1].type == ASSIGN)
-    {
-        if (token_list->count < 3)
-        {
-            program_print_error(program, "Invalid = format!\n");
-            return -1;
-        }
-        struct variable assign;
-
-        if (strchr(token_list->tokens[2].text, '.') != NULL)
-        {
-            assign.type = F32;
-            assign.data = malloc(sizeof(float));
-            *(float *)assign.data = atof(token_list->tokens[2].text);
-        }
-        else
-        {
-            assign.type = I32;
-            assign.data = malloc(sizeof(int32_t));
-            *(int32_t *)assign.data = atoi(token_list->tokens[2].text);
-        }
-
-        if (program_set_var(program, token_list->tokens[0].text, assign) && (program->options & STRICT))
-        {
-            return -1;
-        }
-        return 0;
-    }
-    fprintf(stderr, "%s:%d - Token does not exist!\n", __FILE__, __LINE__);
-    return -1;
 }
 
 /// @brief Closes file and frees variables

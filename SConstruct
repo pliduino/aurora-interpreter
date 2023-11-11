@@ -4,7 +4,7 @@ import os
 exec_name = "exec"
 debug = ARGUMENTS.get('debug', False)
 
-env = Environment(CPATH = {"src/"})
+env = Environment(CPPPATH = ['src'])
 
 if bool(debug):
     env.Append(CFLAGS = ['/Z7', '/W4'])

@@ -2,15 +2,20 @@
 #define AURORA_LEXER_H
 
 #include <malloc.h>
+#include <stdio.h>
 
 enum token_type
 {
     ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
     CREATE_VAR,
     ASSIGN,
     NUMBER,
     NAME,
     PRINT,
+    ENDLINE,
 };
 
 struct token
@@ -31,6 +36,6 @@ void token_list_push_back(struct token_list *const token_list, const struct toke
 
 void token_list_destroy(struct token_list *const token_list);
 
-struct token_list *lex_line(char *line);
+struct token_list *lex_file(FILE *const string);
 
 #endif

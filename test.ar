@@ -1,9 +1,9 @@
-var i32 test
-test = 2
-print test
-test = 5.0
-print test
+var i32 test;
+test = 2;
+print test;
+test = 5.0;
+print test;
 
-var f32 float_test
-float_test = 30.0
-print float_test
+var f32 float_test;
+float_test = 30.0;
+print float_test;
