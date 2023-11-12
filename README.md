@@ -1,4 +1,4 @@
-# c-interpreter
+# Aurora Interpreter
 
 Interpreter made in C.
 
