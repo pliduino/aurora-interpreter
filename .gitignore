@@ -3,4 +3,5 @@ out/
 
 .sconsign.dblite
 *.ar
+*.arc
 *.obj
