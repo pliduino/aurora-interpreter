@@ -28,3 +28,4 @@ Currently supports assigning, printing and creating 32 bits integer and float va
 ## Todo
 - [ ] Use LLVM instead of transpiler
 - [ ] Turn variable array into a dictionary and use hashes instead of indice
+- [ ] Add flow control
