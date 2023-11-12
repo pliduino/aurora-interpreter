@@ -96,13 +96,29 @@ void variable_print(struct variable *variable)
 
 enum variable_type variable_type_from_string(const char *const string)
 {
+    if (strcmp(string, "i8") == 0)
+    {
+        return I8;
+    }
+    if (strcmp(string, "i16") == 0)
+    {
+        return I16;
+    }
     if (strcmp(string, "i32") == 0)
     {
         return I32;
     }
+    if (strcmp(string, "i64") == 0)
+    {
+        return I64;
+    }
     if (strcmp(string, "f32") == 0)
     {
         return F32;
+    }
+    if (strcmp(string, "f64") == 0)
+    {
+        return F64;
     }
 
     return INVALID;
@@ -112,11 +128,18 @@ char *variable_type_to_string(enum variable_type variable_type)
 {
     switch (variable_type)
     {
+    case I8:
+        return "i8";
+    case I16:
+        return "i16";
     case I32:
         return "i32";
-
+    case I64:
+        return "i64";
     case F32:
         return "f32";
+    case F64:
+        return "f64";
     case INVALID:
         return "Invalid";
     default:

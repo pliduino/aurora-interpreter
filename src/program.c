@@ -45,13 +45,29 @@ static void program_add_var(struct program *const program, enum variable_type va
     void *data = NULL;
     switch (variable_type)
     {
+    case I8:
+        data = malloc(sizeof(int8_t));
+        *((int8_t *)data) = 0;
+        break;
+    case I16:
+        data = malloc(sizeof(int16_t));
+        *((int16_t *)data) = 0;
+        break;
     case I32:
         data = malloc(sizeof(int32_t));
         *((int32_t *)data) = 0;
         break;
+    case I64:
+        data = malloc(sizeof(int64_t));
+        *((int64_t *)data) = 0;
+        break;
     case F32:
         data = malloc(sizeof(float));
         *((float *)data) = 0.0;
+        break;
+    case F64:
+        data = malloc(sizeof(double));
+        *((double *)data) = 0.0;
         break;
     case INVALID:
         printf("invalid\n");
@@ -152,11 +168,24 @@ int program_run(struct program *const program)
                 char *type_string;
                 switch (*var_type)
                 {
+                case I8:
+                    type_string = "int8_t";
+                    break;
+                case I16:
+                    type_string = "int16_t";
+                    break;
                 case I32:
-                    type_string = "int";
+                    type_string = "int32_t";
+                    break;
+                case I64:
+                    type_string = "int64_t";
                     break;
                 case F32:
                     type_string = "float";
+                    break;
+                case F64:
+                    type_string = "double";
+                    break;
                 default:
                     break;
                 }
@@ -175,17 +204,28 @@ int program_run(struct program *const program)
             if (program->options & TRANSPILE_C)
             {
                 char *type_string;
+                char *conversion_string = "";
                 switch (*type)
                 {
+                case I8:
+                    type_string = "%d";
+                    char *conversion_string = "(int)";
+                case I16:
+                    type_string = "%hd";
                 case I32:
                     type_string = "%d";
                     break;
+                case I64:
+                    type_string = "%lld";
+                    break;
                 case F32:
                     type_string = "%f";
+                case F64:
+                    type_string = "%lf";
                 default:
                     break;
                 }
-                sprintf(transpile_buffer, "printf(\"%s\\n\", var_%u);\n", type_string, *index);
+                sprintf(transpile_buffer, "printf(\"%s\\n\", %svar_%u);\n", type_string, conversion_string, *index);
                 fputs(transpile_buffer, transpile);
             }
             else
@@ -215,15 +255,24 @@ int program_run(struct program *const program)
 
             if (program->options & TRANSPILE_C)
             {
-                char *type_string;
                 switch (*type)
                 {
+                case I8:
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_index, (int)*(int8_t *)value);
+                    break;
+                case I16:
+                    sprintf(transpile_buffer, "var_%d = %hd;", *assign_index, *(int16_t *)value);
+                    break;
                 case I32:
                     sprintf(transpile_buffer, "var_%d = %d;", *assign_index, *(int32_t *)value);
                     break;
+                case I64:
+                    sprintf(transpile_buffer, "var_%d = %lld;", *assign_index, *(int64_t *)value);
+                    break;
                 case F32:
                     sprintf(transpile_buffer, "var_%d = %f;", *assign_index, *(float *)value);
-                    type_string = "%f";
+                case F64:
+                    sprintf(transpile_buffer, "var_%d = %lf;", *assign_index, *(double *)value);
                 default:
                     break;
                 }
@@ -233,11 +282,23 @@ int program_run(struct program *const program)
             {
                 switch (*type)
                 {
+                case I8:
+                    *(int8_t *)program->variables[*assign_index] = *(int8_t *)value;
+                    break;
+                case I16:
+                    *(int16_t *)program->variables[*assign_index] = *(int16_t *)value;
+                    break;
                 case I32:
                     *(int32_t *)program->variables[*assign_index] = *(int32_t *)value;
                     break;
+                case I64:
+                    *(int64_t *)program->variables[*assign_index] = *(int64_t *)value;
+                    break;
                 case F32:
                     *(float *)program->variables[*assign_index] = *(float *)value;
+                    break;
+                case F64:
+                    *(double *)program->variables[*assign_index] = *(double *)value;
                     break;
                 case INVALID:
                     printf("Invalid variable type - Assign\n");
@@ -267,5 +328,9 @@ int program_run(struct program *const program)
 void program_close(const struct program *const program)
 {
     fclose(program->fptr);
-    variable_array_free(program->variables);
+    for (size_t i = 0; i < program->variable_count; i++)
+    {
+        free(program->variables[i]);
+    }
+    free(program->variables);
 }

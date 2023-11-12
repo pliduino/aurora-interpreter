@@ -6,8 +6,12 @@
 enum variable_type
 {
     INVALID = 0,
+    I8,
+    I16,
     I32,
+    I64,
     F32,
+    F64,
 };
 
 struct variable

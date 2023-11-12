@@ -25,7 +25,7 @@ Currently supports assigning, printing and creating 32 bits integer and float va
   -t --transpile -> Transpiles your code to C
 ```
 
-## Todo
+## Goals
 - [ ] Use LLVM instead of transpiler
 - [ ] Turn variable array into a dictionary and use hashes instead of indice
 - [ ] Add flow control
