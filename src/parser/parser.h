@@ -1,5 +1,5 @@
-#ifndef PARSER
-#define PARSER
+#ifndef AURORA_PARSER
+#define AURORA_PARSER
 
 #define WORD_SIZE 16
 
@@ -44,7 +44,6 @@ Function Line Scope_Start, Scope_End
 END OF PROGRAM = 0
 */
 
-char *
-parse_tokens(struct token_list *token_list);
+char *parse_tokens(struct token_list *token_list);
 
 #endif

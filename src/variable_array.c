@@ -13,11 +13,27 @@ struct variable_array *variable_array_init(void)
     return variable_array;
 }
 
-void variable_array_add(struct variable_array *const variable_array, struct variable variant)
+// void variable_array_remove_at(struct variable_array *const variable_array, size_t index)
+// {
+//     variable_array->data[index].data = variable_array->last_freed;
+//     variable_array->last_freed = index;
+// }
+
+/// @brief a \n a
+/// @param variable_array
+/// @param variable
+/// @return -1 if variable already exists 0 if successful
+int variable_array_add(struct variable_array *const variable_array, struct variable variable)
 {
+    if (variable_array_find(variable_array, variable.name) >= 0)
+    {
+        return -1;
+    }
+
     variable_array->data = realloc(variable_array->data, (variable_array->size + 1) * sizeof(struct variable));
-    variable_array->data[variable_array->size] = variant;
+    variable_array->data[variable_array->size] = variable;
     variable_array->size++;
+    return 0;
 }
 
 struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index)
@@ -30,9 +46,9 @@ struct variable *variable_array_get_index(const struct variable_array *const var
     return &variable_array->data[index];
 }
 
-int variable_array_find(const struct variable_array *const variable_array, const char *const name)
+int64_t variable_array_find(const struct variable_array *const variable_array, const char *const name)
 {
-    for (size_t i = 0; i < variable_array->size; i++)
+    for (uint32_t i = 0; i < variable_array->size; i++)
     {
         if (strcmp(variable_array->data[i].name, name) == 0)
         {

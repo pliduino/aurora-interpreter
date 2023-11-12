@@ -28,7 +28,7 @@ struct program
 
 struct program *program_init(const char *const file_path);
 
-void program_run(struct program *const program);
+int program_run(struct program *const program);
 
 void program_close(const struct program *const program);
 

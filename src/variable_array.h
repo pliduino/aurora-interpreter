@@ -1,6 +1,8 @@
 #ifndef AURORA_VARIABLE_ARRAY_H
 #define AURORA_VARIABLE_ARRAY_H
 
+#include <stdint.h>
+
 enum variable_type
 {
     INVALID = 0,
@@ -11,23 +13,26 @@ enum variable_type
 struct variable
 {
     char *name;
-    void *data;
     enum variable_type type;
+    void *data;
 };
 
 struct variable_array
 {
     struct variable *data;
+    void *last_freed;
     size_t size;
 };
 
 struct variable_array *variable_array_init(void);
 
-void variable_array_add(struct variable_array *const variable_array, struct variable variant);
+void variable_array_remove_at(struct variable_array *const variable_array, size_t index);
+
+int variable_array_add(struct variable_array *const variable_array, struct variable variant);
 
 struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index);
 
-int variable_array_find(const struct variable_array *const variable_array, const char *const name);
+int64_t variable_array_find(const struct variable_array *const variable_array, const char *const name);
 
 void variable_array_free(struct variable_array *const variable_array);
 

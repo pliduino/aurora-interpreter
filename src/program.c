@@ -86,7 +86,7 @@ inline static int compare_bytes(char *x, char *y, size_t bytes)
     return 1;
 }
 
-void program_run(struct program *const program)
+int program_run(struct program *const program)
 {
     clock_t exec_time;
     char *parsed_program;
@@ -109,7 +109,7 @@ void program_run(struct program *const program)
         if (parsed_program == NULL)
         {
             fprintf(stderr, "%s:%d - Error while parsing!\n", __FILE__, __LINE__);
-            return;
+            return -1;
         }
     }
 
@@ -118,6 +118,7 @@ void program_run(struct program *const program)
         FILE *fp = fopen("test.arc", "w");
         if (fp == NULL)
         {
+            fprintf(stderr, "Could not open %s!\n", "test.arc");
             return -1;
         }
         for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
@@ -182,6 +183,7 @@ void program_run(struct program *const program)
     exec_time = clock() - exec_time;
     double time_taken = (((double)exec_time) / CLOCKS_PER_SEC) * 1000;
     printf("\nExecution time: %.0fms\n", time_taken);
+    return 0;
 }
 
 /// @brief Closes file and frees variables
