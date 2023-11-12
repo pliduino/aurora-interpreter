@@ -9,7 +9,7 @@
 int main(int argc, char const *argv[])
 {
     static const char usestr[] =
-        "[-v verbose][-s strict]\n"
+        "[-v verbose][-s strict][-c compile][-x execute]\n"
         "Other options: \n"
         "NB: -h gives more help!\n";
 
@@ -17,6 +17,8 @@ int main(int argc, char const *argv[])
         "\nOption summary:\n"
         "   -v --verbose  - Prints line being parsed\n"
         "   -s --strict   - Stops program in any error\n"
+        "   -c --compile  - Pre-compiles the program into bytecode\n"
+        "   -x --execute  - Runs pre-compiled bytecode\n"
         "   -h --help     - Prints this message\n";
 
     if (argc < 2)
@@ -44,6 +46,16 @@ int main(int argc, char const *argv[])
             if (argv[i][1] == 's' || strcmp(argv[i], "--strict") == 0)
             {
                 options |= STRICT;
+                continue;
+            }
+            if (argv[i][1] == 'c' || strcmp(argv[i], "--compile") == 0)
+            {
+                options |= COMPILE;
+                continue;
+            }
+            if (argv[i][1] == 'x' || strcmp(argv[i], "--execute") == 0)
+            {
+                options |= RUN_COMPILED;
                 continue;
             }
 

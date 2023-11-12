@@ -12,6 +12,8 @@ enum program_options
     EMPTY = 0,
     VERBOSE = 1 << 0,
     STRICT = 1 << 1,
+    COMPILE = 1 << 2,
+    RUN_COMPILED = 1 << 3,
 };
 
 struct program

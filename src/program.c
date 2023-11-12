@@ -89,19 +89,44 @@ inline static int compare_bytes(char *x, char *y, size_t bytes)
 void program_run(struct program *const program)
 {
     clock_t exec_time;
+    char *parsed_program;
     exec_time = clock();
 
-    struct token_list *token_list = lex_file(program->fptr);
-
-    char *parsed_program = parse_tokens(token_list);
-    token_list_destroy(token_list);
-
-    if (parsed_program == NULL)
+    if (program->options & RUN_COMPILED)
     {
-        fprintf(stderr, "%s:%d - Error while parsing!\n", __FILE__, __LINE__);
-        return;
+        fseek(program->fptr, 0, SEEK_END);
+        long file_size = ftell(program->fptr);
+        fseek(program->fptr, 0, SEEK_SET);
+
+        parsed_program = malloc(file_size + 1);
+        fread(parsed_program, file_size, 1, program->fptr);
+    }
+    else
+    {
+        struct token_list *token_list = lex_file(program->fptr);
+        parsed_program = parse_tokens(token_list);
+        token_list_destroy(token_list);
+        if (parsed_program == NULL)
+        {
+            fprintf(stderr, "%s:%d - Error while parsing!\n", __FILE__, __LINE__);
+            return;
+        }
     }
 
+    if (program->options & COMPILE)
+    {
+        FILE *fp = fopen("test.arc", "w");
+        if (fp == NULL)
+        {
+            return -1;
+        }
+        for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
+        {
+            fwrite(&parsed_program[program->cur_line * WORD_SIZE], WORD_SIZE, 1, fp);
+        }
+        fwrite(&parsed_program[program->cur_line * WORD_SIZE], WORD_SIZE, 1, fp);
+        return 0;
+    }
     for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
