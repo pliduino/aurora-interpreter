@@ -267,5 +267,5 @@ int program_run(struct program *const program)
 void program_close(const struct program *const program)
 {
     fclose(program->fptr);
-    // variable_array_free(program->variables);
+    variable_array_free(program->variables);
 }
