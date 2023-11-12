@@ -66,14 +66,7 @@ static void program_add_var(struct program *const program, enum variable_type va
     program->variables[program->variable_count - 1] = data;
 }
 
-int program_set_var(const struct program *const program, const char *const variable_name, const struct variable assign)
-{
-
-    // program_print_error(program, "Trying to assign %s to %s:%s!\n", variable_type_to_string(assign.type), variable_type_to_string(variable->type), variable->name);
-    return -1;
-}
-
-inline static int compare_bytes(char *x, char *y, size_t bytes)
+static inline int compare_bytes(char *x, char *y, size_t bytes)
 {
     for (size_t i = 0; i < bytes; i++)
     {
@@ -90,8 +83,12 @@ int program_run(struct program *const program)
 {
     clock_t exec_time;
     char *parsed_program;
+    FILE *transpile;
+    uint32_t transpiler_temp = 0;
+    char transpile_buffer[1024];
     exec_time = clock();
 
+    // Runs pre-compiled bytecode
     if (program->options & RUN_COMPILED)
     {
         fseek(program->fptr, 0, SEEK_END);
@@ -101,6 +98,7 @@ int program_run(struct program *const program)
         parsed_program = malloc(file_size + 1);
         fread(parsed_program, file_size, 1, program->fptr);
     }
+    // Parses aurora file
     else
     {
         struct token_list *token_list = lex_file(program->fptr);
@@ -128,31 +126,85 @@ int program_run(struct program *const program)
         fwrite(&parsed_program[program->cur_line * WORD_SIZE], WORD_SIZE, 1, fp);
         return 0;
     }
+
+    if (program->options & TRANSPILE_C)
+    {
+        transpile = fopen("transpiled.c", "w");
+        if (transpile == NULL)
+        {
+            fprintf(stderr, "Could not open %s!\n", "transpiled.c");
+            return -1;
+        }
+
+        fputs("#include <stdint.h>\n"
+              "#include <stdio.h>\n"
+              "int main(){\n",
+              transpile);
+    }
+
     for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
             uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            program_add_var(program, *var_type);
+            if (program->options & TRANSPILE_C)
+            {
+                char *type_string;
+                switch (*var_type)
+                {
+                case I32:
+                    type_string = "int";
+                    break;
+                case F32:
+                    type_string = "float";
+                default:
+                    break;
+                }
+                sprintf(transpile_buffer, "%s var_%d;\n", type_string, transpiler_temp++);
+                fputs(transpile_buffer, transpile);
+            }
+            else
+            {
+                program_add_var(program, *var_type);
+            }
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
         {
             uint32_t *index = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
             uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
-            switch (*type)
+            if (program->options & TRANSPILE_C)
             {
-            case I32:
-                printf("%d\n", *(int32_t *)(program->variables[*index]));
-                break;
-            case F32:
-                printf("%f\n", *(float *)(program->variables[*index]));
-                break;
-            case INVALID:
-                printf("Invalid variable type - Printing\n");
-                break;
-            default:
-                printf("Invalid variable type - Printing\n");
-                break;
+                char *type_string;
+                switch (*type)
+                {
+                case I32:
+                    type_string = "%d";
+                    break;
+                case F32:
+                    type_string = "%f";
+                default:
+                    break;
+                }
+                sprintf(transpile_buffer, "printf(\"%s\\n\", var_%u);\n", type_string, *index);
+                fputs(transpile_buffer, transpile);
+            }
+            else
+            {
+                switch (*type)
+                {
+                case I32:
+                    printf("%d\n", *(int32_t *)(program->variables[*index]));
+                    break;
+                case F32:
+                    printf("%f\n", *(float *)(program->variables[*index]));
+                    break;
+                case INVALID:
+                    printf("Invalid variable type - Printing\n");
+                    break;
+                default:
+                    printf("Invalid variable type - Printing\n");
+                    break;
+                }
             }
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_ASSIGN, COMMAND_BYTES))
@@ -160,22 +212,46 @@ int program_run(struct program *const program)
             int *assign_index = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
             uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
             void *value = &parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES];
-            switch (*type)
+
+            if (program->options & TRANSPILE_C)
             {
-            case I32:
-                *(int32_t *)program->variables[*assign_index] = *(int32_t *)value;
-                break;
-            case F32:
-                *(float *)program->variables[*assign_index] = *(float *)value;
-                break;
-            case INVALID:
-                printf("Invalid variable type - Assign\n");
-                break;
-            default:
-                printf("Invalid variable type - Assign\n");
-                break;
+                char *type_string;
+                switch (*type)
+                {
+                case I32:
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_index, *(int32_t *)value);
+                    break;
+                case F32:
+                    sprintf(transpile_buffer, "var_%d = %f;", *assign_index, *(float *)value);
+                    type_string = "%f";
+                default:
+                    break;
+                }
+                fputs(transpile_buffer, transpile);
+            }
+            else
+            {
+                switch (*type)
+                {
+                case I32:
+                    *(int32_t *)program->variables[*assign_index] = *(int32_t *)value;
+                    break;
+                case F32:
+                    *(float *)program->variables[*assign_index] = *(float *)value;
+                    break;
+                case INVALID:
+                    printf("Invalid variable type - Assign\n");
+                    break;
+                default:
+                    printf("Invalid variable type - Assign\n");
+                    break;
+                }
             }
         }
+    }
+    if (program->options & TRANSPILE_C)
+    {
+        fputs("}\n", transpile);
     }
 
     free(parsed_program);

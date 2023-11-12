@@ -14,6 +14,7 @@ enum program_options
     STRICT = 1 << 1,
     COMPILE = 1 << 2,
     RUN_COMPILED = 1 << 3,
+    TRANSPILE_C = 1 << 4,
 };
 
 struct program

@@ -9,17 +9,18 @@
 int main(int argc, char const *argv[])
 {
     static const char usestr[] =
-        "[-v verbose][-s strict][-c compile][-x execute]\n"
+        "[-v verbose][-s strict][-c compile][-x execute][-t transpile]\n"
         "Other options: \n"
         "NB: -h gives more help!\n";
 
     static const char fullhelp[] =
         "\nOption summary:\n"
-        "   -v --verbose  - Prints line being parsed\n"
-        "   -s --strict   - Stops program in any error\n"
-        "   -c --compile  - Pre-compiles the program into bytecode\n"
-        "   -x --execute  - Runs pre-compiled bytecode\n"
-        "   -h --help     - Prints this message\n";
+        "   -v --verbose   - Prints line being parsed\n"
+        "   -s --strict    - Stops program in any error\n"
+        "   -c --compile   - Pre-compiles the program into bytecode\n"
+        "   -x --execute   - Runs pre-compiled bytecode\n"
+        "   -t --transpile - Transpiles code to C"
+        "   -h --help      - Prints this message\n";
 
     if (argc < 2)
     {
@@ -56,6 +57,11 @@ int main(int argc, char const *argv[])
             if (argv[i][1] == 'x' || strcmp(argv[i], "--execute") == 0)
             {
                 options |= RUN_COMPILED;
+                continue;
+            }
+            if (argv[i][1] == 't' || strcmp(argv[i], "--transpile") == 0)
+            {
+                options |= TRANSPILE_C;
                 continue;
             }
 
