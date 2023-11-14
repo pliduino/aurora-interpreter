@@ -20,6 +20,7 @@ enum token_type
     NAME,
     PRINT,
     ENDLINE,
+    FUNCTION,
 };
 
 struct token

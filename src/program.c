@@ -10,6 +10,9 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 
+#define KILOBYTE 1000
+#define MEGABYTE KILOBYTE * 1000
+
 void program_print_error(const struct program *const program, const char *const error_format, ...)
 {
     va_list argptr;
@@ -23,16 +26,15 @@ struct program *program_init(const char *const file_path)
 {
     struct program *program = malloc(sizeof(struct program));
     program->file_path = file_path;
-    errno_t error = fopen_s(&(program->fptr), file_path, "r");
+    program->fptr = fopen(file_path, "r");
 
-    if (error != 0)
+    if (program->fptr == NULL)
     {
         fprintf(stderr, "%s:%d - File does not exist!\n", __FILE__, __LINE__);
         return NULL;
     }
 
-    program->variables = NULL;
-    program->variable_count = 0;
+    program->stack = malloc(1 * MEGABYTE);
     program->cur_line = 0;
     return program;
 }
@@ -40,70 +42,9 @@ struct program *program_init(const char *const file_path)
 /// @brief Adds variable to program
 /// @param program
 /// @param variable_type
-static void program_add_var(struct program *const program, enum variable_type variable_type)
+static void program_add_var(struct program *const program, enum variable_type variable_type, size_t position)
 {
-    void *data = NULL;
-    switch (variable_type)
-    {
-    case BOOL:
-        data = malloc(sizeof(char));
-        *((char *)data) = 0;
-        break;
-    case CHAR:
-        data = malloc(sizeof(char));
-        *((char *)data) = 0;
-        break;
-    case I8:
-        data = malloc(sizeof(int8_t));
-        *((int8_t *)data) = 0;
-        break;
-    case I16:
-        data = malloc(sizeof(int16_t));
-        *((int16_t *)data) = 0;
-        break;
-    case I32:
-        data = malloc(sizeof(int32_t));
-        *((int32_t *)data) = 0;
-        break;
-    case I64:
-        data = malloc(sizeof(int64_t));
-        *((int64_t *)data) = 0;
-        break;
-    case U8:
-        data = malloc(sizeof(uint8_t));
-        *((uint8_t *)data) = 0;
-        break;
-    case U16:
-        data = malloc(sizeof(uint16_t));
-        *((uint16_t *)data) = 0;
-        break;
-    case U32:
-        data = malloc(sizeof(uint32_t));
-        *((uint32_t *)data) = 0;
-        break;
-    case U64:
-        data = malloc(sizeof(uint64_t));
-        *((uint64_t *)data) = 0;
-        break;
-    case F32:
-        data = malloc(sizeof(float));
-        *((float *)data) = 0.0;
-        break;
-    case F64:
-        data = malloc(sizeof(double));
-        *((double *)data) = 0.0;
-        break;
-    case INVALID:
-        printf("invalid\n");
-        return;
-    default:
-        printf("invalid\n");
-        return;
-    }
-
-    program->variable_count++;
-    program->variables = realloc(program->variables, sizeof(void *) * program->variable_count);
-    program->variables[program->variable_count - 1] = data;
+    memset((char *)program->stack + position, 0, get_size_of_type(variable_type));
 }
 
 static inline int compare_bytes(char *x, char *y, size_t bytes)
@@ -124,7 +65,6 @@ int program_run(struct program *const program)
     clock_t exec_time;
     char *parsed_program;
     FILE *transpile;
-    uint32_t transpiler_temp = 0;
     char transpile_buffer[1024];
     exec_time = clock();
 
@@ -187,7 +127,8 @@ int program_run(struct program *const program)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
-            uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint32_t *position = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
             if (program->options & TRANSPILE_C)
             {
                 char *type_string = "";
@@ -232,12 +173,12 @@ int program_run(struct program *const program)
                 default:
                     break;
                 }
-                sprintf(transpile_buffer, "%s var_%d;\n", type_string, transpiler_temp++);
+                sprintf(transpile_buffer, "%s var_%d;\n", type_string, *position);
                 fputs(transpile_buffer, transpile);
             }
             else
             {
-                program_add_var(program, *var_type);
+                program_add_var(program, *var_type, *position);
             }
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
@@ -252,37 +193,37 @@ int program_run(struct program *const program)
                     sprintf(transpile_buffer, "if(var_%u){printf(\"True\n\")} else {printf(\"False\n\", );\n}", *index);
                     break;
                 case CHAR:
-                    sprintf(transpile_buffer, "printf(\"\%c\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%c\\n\", var_%u);\n", *index);
                     break;
                 case I8:
-                    sprintf(transpile_buffer, "printf(\"\%d\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%d\\n\", var_%u);\n", *index);
                     break;
                 case I16:
-                    sprintf(transpile_buffer, "printf(\"\%hd\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%hd\\n\", var_%u);\n", *index);
                     break;
                 case I32:
-                    sprintf(transpile_buffer, "printf(\"\%d\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%d\\n\", var_%u);\n", *index);
                     break;
                 case I64:
-                    sprintf(transpile_buffer, "printf(\"\%lld\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%lld\\n\", var_%u);\n", *index);
                     break;
                 case U8:
-                    sprintf(transpile_buffer, "printf(\"\%u\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%u\\n\", var_%u);\n", *index);
                     break;
                 case U16:
-                    sprintf(transpile_buffer, "printf(\"\%hu\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%hu\\n\", var_%u);\n", *index);
                     break;
                 case U32:
-                    sprintf(transpile_buffer, "printf(\"\%u\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%u\\n\", var_%u);\n", *index);
                     break;
                 case U64:
-                    sprintf(transpile_buffer, "printf(\"\%llu\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%llu\\n\", var_%u);\n", *index);
                     break;
                 case F32:
-                    sprintf(transpile_buffer, "printf(\"\%f\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%f\\n\", var_%u);\n", *index);
                     break;
                 case F64:
-                    sprintf(transpile_buffer, "printf(\"\%lf\n\", var_%u);\n", *index);
+                    sprintf(transpile_buffer, "printf(\"%%lf\\n\", var_%u);\n", *index);
                     break;
                 default:
                     break;
@@ -294,7 +235,7 @@ int program_run(struct program *const program)
                 switch (*type)
                 {
                 case BOOL:
-                    if (*(char *)program->variables[*index])
+                    if (*(char *)((char *)program->stack + *index))
                     {
                         printf("True\n");
                     }
@@ -304,37 +245,37 @@ int program_run(struct program *const program)
                     }
                     break;
                 case CHAR:
-                    printf("%c\n", *(char *)(program->variables[*index]));
+                    printf("%c\n", *(char *)((char *)program->stack + *index));
                     break;
                 case I8:
-                    printf("%d\n", (int32_t)(*(int8_t *)(program->variables[*index])));
+                    printf("%d\n", (int32_t)(*(int8_t *)((char *)program->stack + *index)));
                     break;
                 case I16:
-                    printf("%hd\n", *(int16_t *)(program->variables[*index]));
+                    printf("%hd\n", *(int16_t *)((char *)program->stack + *index));
                     break;
                 case I32:
-                    printf("%d\n", *(int32_t *)(program->variables[*index]));
+                    printf("%d\n", *(int32_t *)((char *)program->stack + *index));
                     break;
                 case I64:
-                    printf("%lld\n", *(int64_t *)(program->variables[*index]));
+                    printf("%lld\n", *(int64_t *)((char *)program->stack + *index));
                     break;
                 case U8:
-                    printf("%u\n", (uint32_t)(*(uint8_t *)(program->variables[*index])));
+                    printf("%u\n", (uint32_t)(*(uint8_t *)((char *)program->stack + *index)));
                     break;
                 case U16:
-                    printf("%hu\n", *(uint16_t *)(program->variables[*index]));
+                    printf("%hu\n", *(uint16_t *)((char *)program->stack + *index));
                     break;
                 case U32:
-                    printf("%u\n", *(uint32_t *)(program->variables[*index]));
+                    printf("%u\n", *(uint32_t *)((char *)program->stack + *index));
                     break;
                 case U64:
-                    printf("%llu\n", *(uint64_t *)(program->variables[*index]));
+                    printf("%llu\n", *(uint64_t *)((char *)program->stack + *index));
                     break;
                 case F32:
-                    printf("%f\n", *(float *)(program->variables[*index]));
+                    printf("%f\n", *(float *)((char *)program->stack + *index));
                     break;
                 case F64:
-                    printf("%lf\n", *(double *)(program->variables[*index]));
+                    printf("%lf\n", *(double *)((char *)program->stack + *index));
                     break;
                 case INVALID:
                     printf("Invalid variable type - Printing\n");
@@ -347,7 +288,7 @@ int program_run(struct program *const program)
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_ASSIGN, COMMAND_BYTES))
         {
-            int *assign_index = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            int *assign_pointer = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
             uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
             void *value = &parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES];
 
@@ -356,39 +297,39 @@ int program_run(struct program *const program)
                 switch (*type)
                 {
                 case BOOL:
-                    sprintf(transpile_buffer, "var_%d = %d;", *assign_index, (int32_t) * (int8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer, (int32_t) * (int8_t *)value);
                     break;
                 case CHAR:
-                    sprintf(transpile_buffer, "var_%d = '%c';", *assign_index, *(char *)value);
+                    sprintf(transpile_buffer, "var_%d = '%c';", *assign_pointer, *(char *)value);
                     break;
                 case I8:
-                    sprintf(transpile_buffer, "var_%d = %d;", *assign_index, (int32_t) * (int8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer, (int32_t) * (int8_t *)value);
                     break;
                 case I16:
-                    sprintf(transpile_buffer, "var_%d = %hd;", *assign_index, *(int16_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %hd;", *assign_pointer, *(int16_t *)value);
                     break;
                 case I32:
-                    sprintf(transpile_buffer, "var_%d = %d;", *assign_index, *(int32_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer, *(int32_t *)value);
                     break;
                 case I64:
-                    sprintf(transpile_buffer, "var_%d = %lld;", *assign_index, *(int64_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %lld;", *assign_pointer, *(int64_t *)value);
                     break;
                 case U8:
-                    sprintf(transpile_buffer, "var_%d = %u;", *assign_index, (uint32_t) * (uint8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %u;", *assign_pointer, (uint32_t) * (uint8_t *)value);
                     break;
                 case U16:
-                    sprintf(transpile_buffer, "var_%d = %hu;", *assign_index, *(uint16_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %hu;", *assign_pointer, *(uint16_t *)value);
                     break;
                 case U32:
-                    sprintf(transpile_buffer, "var_%d = %u;", *assign_index, *(uint32_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %u;", *assign_pointer, *(uint32_t *)value);
                     break;
                 case U64:
-                    sprintf(transpile_buffer, "var_%d = %llu;", *assign_index, *(uint64_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %llu;", *assign_pointer, *(uint64_t *)value);
                     break;
                 case F32:
-                    sprintf(transpile_buffer, "var_%d = %f;", *assign_index, *(float *)value);
+                    sprintf(transpile_buffer, "var_%d = %f;", *assign_pointer, *(float *)value);
                 case F64:
-                    sprintf(transpile_buffer, "var_%d = %lf;", *assign_index, *(double *)value);
+                    sprintf(transpile_buffer, "var_%d = %lf;", *assign_pointer, *(double *)value);
                 default:
                     break;
                 }
@@ -399,22 +340,22 @@ int program_run(struct program *const program)
                 switch (*type)
                 {
                 case I8:
-                    *(int8_t *)program->variables[*assign_index] = *(int8_t *)value;
+                    *(int8_t *)((char *)program->stack + *assign_pointer) = *(int8_t *)value;
                     break;
                 case I16:
-                    *(int16_t *)program->variables[*assign_index] = *(int16_t *)value;
+                    *(int16_t *)((char *)program->stack + *assign_pointer) = *(int16_t *)value;
                     break;
                 case I32:
-                    *(int32_t *)program->variables[*assign_index] = *(int32_t *)value;
+                    *(int32_t *)((char *)program->stack + *assign_pointer) = *(int32_t *)value;
                     break;
                 case I64:
-                    *(int64_t *)program->variables[*assign_index] = *(int64_t *)value;
+                    *(int64_t *)((char *)program->stack + *assign_pointer) = *(int64_t *)value;
                     break;
                 case F32:
-                    *(float *)program->variables[*assign_index] = *(float *)value;
+                    *(float *)((char *)program->stack + *assign_pointer) = *(float *)value;
                     break;
                 case F64:
-                    *(double *)program->variables[*assign_index] = *(double *)value;
+                    *(double *)((char *)program->stack + *assign_pointer) = *(double *)value;
                     break;
                 case INVALID:
                     printf("Invalid variable type - Assign\n");
@@ -444,9 +385,5 @@ int program_run(struct program *const program)
 void program_close(const struct program *const program)
 {
     fclose(program->fptr);
-    for (size_t i = 0; i < program->variable_count; i++)
-    {
-        free(program->variables[i]);
-    }
-    free(program->variables);
+    free(program->stack);
 }

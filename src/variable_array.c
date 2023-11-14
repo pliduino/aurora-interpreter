@@ -9,15 +9,10 @@ struct variable_array *variable_array_init(void)
 {
     struct variable_array *const variable_array = malloc(sizeof(struct variable_array));
     variable_array->data = NULL;
+    variable_array->head = 0;
     variable_array->size = 0;
     return variable_array;
 }
-
-// void variable_array_remove_at(struct variable_array *const variable_array, size_t index)
-// {
-//     variable_array->data[index].data = variable_array->last_freed;
-//     variable_array->last_freed = index;
-// }
 
 /// @brief a \n a
 /// @param variable_array
@@ -34,6 +29,42 @@ int variable_array_add(struct variable_array *const variable_array, struct varia
     variable_array->data[variable_array->size] = variable;
     variable_array->size++;
     return 0;
+}
+
+size_t get_size_of_type(enum variable_type variable_type)
+{
+    switch (variable_type)
+    {
+    case BOOL:
+        return 1;
+    case CHAR:
+        return 1;
+    case I8:
+        return 1;
+    case I16:
+        return 2;
+    case I32:
+        return 4;
+    case I64:
+        return 8;
+    case U8:
+        return 1;
+    case U16:
+        return 2;
+    case U32:
+        return 4;
+    case U64:
+        return 8;
+    case F32:
+        return 4;
+    case F64:
+        return 8;
+    case INVALID:
+        return 0;
+    default:
+        return 0;
+        break;
+    }
 }
 
 struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index)
@@ -90,6 +121,7 @@ void variable_print(struct variable *variable)
         printf("Invalid variable");
         break;
     default:
+        printf("Not implemented");
         break;
     }
 }
@@ -179,7 +211,7 @@ char *variable_type_to_string(enum variable_type variable_type)
     case INVALID:
         return "Invalid";
     default:
-        return "Invalid";
+        return "Not Implemented";
         break;
     }
 }

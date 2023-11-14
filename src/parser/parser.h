@@ -23,8 +23,8 @@ struct token_list;
 2 4 4 2
 Assign pointer value type
 
-2 4
-CreateVar Type
+2 4 2
+CreateVar Position Type
 
 2 4 4
 Print pointer Type

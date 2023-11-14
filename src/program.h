@@ -21,8 +21,7 @@ struct program
 {
     FILE *fptr;
     const char *file_path;
-    void **variables;
-    size_t variable_count;
+    void *stack;
     long long int cur_line;
     char options;
 };

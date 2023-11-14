@@ -25,18 +25,17 @@ struct variable
     char *name;
     enum variable_type type;
     void *data;
+    size_t position;
 };
 
 struct variable_array
 {
     struct variable *data;
-    void *last_freed;
+    size_t head;
     size_t size;
 };
 
 struct variable_array *variable_array_init(void);
-
-void variable_array_remove_at(struct variable_array *const variable_array, size_t index);
 
 int variable_array_add(struct variable_array *const variable_array, struct variable variant);
 
@@ -51,5 +50,7 @@ void variable_print(struct variable *variable);
 enum variable_type variable_type_from_string(const char *const string);
 
 char *variable_type_to_string(enum variable_type variable_type);
+
+size_t get_size_of_type(enum variable_type variable_type);
 
 #endif

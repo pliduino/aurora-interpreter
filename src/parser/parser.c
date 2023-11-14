@@ -51,6 +51,7 @@ inline static void create_var(struct parse_vars *parse_vars)
         {
             .name = parse_vars->token_buffer[2]->text,
             .type = variable_type_from_string(parse_vars->token_buffer[1]->text),
+            .position = parse_vars->variable_array->head,
         };
     if (variable.type == INVALID)
     {
@@ -62,9 +63,13 @@ inline static void create_var(struct parse_vars *parse_vars)
         fprintf(stderr, "%s::%d: Name %s already exists!\n", "filename", parse_vars->token_buffer[2]->line, parse_vars->token_buffer[2]->text);
         return;
     }
+
     int16_t two_byte_type = (int16_t)variable.type;
-    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);
-    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&two_byte_type, TYPE_BYTES);
+
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);                                              // Command
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&parse_vars->variable_array->head, ADDRESS_BYTES); // Var Address
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);       // Var type
+    parse_vars->variable_array->head += get_size_of_type(variable.type);
     next_word(parse_vars);
 }
 
@@ -104,7 +109,7 @@ inline static void assign(struct parse_vars *parse_vars)
 
         // Assign
         set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_ASSIGN, COMMAND_BYTES);
-        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&index, ADDRESS_BYTES);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&parse_vars->variable_array->data[index].position, ADDRESS_BYTES);
         set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);
 
         switch (type)
@@ -172,7 +177,7 @@ char *parse_tokens(struct token_list *token_list)
                 }
 
                 int16_t two_byte_type = parse_vars.variable_array->data[index].type;
-                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&index, ADDRESS_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&parse_vars.variable_array->data[index].position, ADDRESS_BYTES);
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);
                 next_word(&parse_vars);
             }

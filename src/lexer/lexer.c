@@ -170,6 +170,11 @@ struct token_list *lex_file(FILE *const file)
             struct token token = {.text = words[i], .type = PRINT, .line = line};
             token_list_push_back(token_list, token);
         }
+        else if (strcmp(words[i], "fn") == 0)
+        {
+            struct token token = {.text = words[i], .type = FUNCTION, .line = line};
+            token_list_push_back(token_list, token);
+        }
         else if (words[i][0] == ';')
         {
             struct token token = {.text = words[i], .type = ENDLINE, .line = line};
