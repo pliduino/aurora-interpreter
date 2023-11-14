@@ -214,8 +214,8 @@ void token_list_push_back(struct token_list *const token_list, const struct toke
 
 void token_list_destroy(struct token_list *const token_list)
 {
-    // free(token_list->tokens);
-    // free(token_list);
+    free(token_list->tokens);
+    free(token_list);
 }
 
 struct token_list *token_list_init()
