@@ -537,7 +537,7 @@ char *parse_tokens(const struct token_list *const token_list, struct variable_ar
                         }
 
                         command_assign(&parse_vars, parse_vars.function_array->data[function_index].arguments[j].variable_type, func_stack_head, parse_vars.token_buffer[2 + 2 * j]->text);
-                        func_stack_head = get_size_of_type(two_byte_type);
+                        func_stack_head += get_size_of_type(two_byte_type);
                     }
 
                     // Jumps to function
