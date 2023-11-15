@@ -6,16 +6,14 @@ A lexer turns your file into tokens which in turn get parsed into a 128 bit inst
 
 ## Features
 
-Currently supports assigning, printing and creating integer, float and char values, it also supports primitive functions without arguments.
+Currently supports assigning, printing and creating integer, float and char values, it also supports functions.
 
 ```
-  fn test_func(){
-    var i32 test_int;
-    test_int = 3;
+  fn test_func(i32 test_int){
     print(test_int);
   }
 
-  test_func();
+  test_func(20);
 
   var f32 test_float;
   test_float = 5.0;
