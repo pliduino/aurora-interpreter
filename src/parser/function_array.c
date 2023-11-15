@@ -7,7 +7,7 @@
 
 struct function_array *function_array_init(void)
 {
-    struct function_array *const function_array = malloc(sizeof(function_array));
+    struct function_array *const function_array = malloc(sizeof(struct function_array));
     function_array->size = 0;
     function_array->data = NULL;
 
@@ -48,13 +48,13 @@ void function_array_free(struct function_array *function_array)
         return;
     }
 
-    for (size_t i = 0; i < function_array->size; i++)
-    {
-        free(function_array->data[i].name);
-    }
+    // Names are provided by tokens so they are responsible to freeing them, if it causes problem later use strcpy and free here
+    // for (size_t i = 0; i < function_array->size; i++)
+    // {
+    // free(function_array->data[i].name);
+    // }
 
     free(function_array->data);
 
-    // TODO: Sometimes crashes
-    // free(function_array);
+    free(function_array);
 }

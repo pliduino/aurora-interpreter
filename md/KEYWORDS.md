@@ -25,5 +25,11 @@ class
 | *      | Multiply    |
 | =      | Assign      |
 
+### Others
+
+| Symbol | Description |
+|:------:|:-----------:|
+| #      | Comment      |
+
 
 , ; . [ ] ( ) { }

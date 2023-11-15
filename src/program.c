@@ -71,6 +71,7 @@ int program_run(struct program *const program)
     else
     {
         struct token_list *token_list = lex_file(program->fptr);
+
         parsed_program = parse_tokens(token_list, 0);
         token_list_destroy(token_list);
         if (parsed_program == NULL)
@@ -386,7 +387,7 @@ int program_run(struct program *const program)
         fputs("}\n", transpile);
     }
 
-    // free(parsed_program);
+    free(parsed_program);
 
     exec_time = clock() - exec_time;
     double time_taken = (((double)exec_time) / CLOCKS_PER_SEC) * 1000;
@@ -400,4 +401,5 @@ void program_close(const struct program *const program)
 {
     fclose(program->fptr);
     free(program->stack);
+    free(program);
 }

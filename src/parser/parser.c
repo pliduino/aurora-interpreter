@@ -41,25 +41,25 @@ inline static void next_word(struct parse_vars *parse_vars)
 static inline void backblock_command(struct parse_vars *parse_vars)
 {
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
-    next_word(&parse_vars);
+    next_word(parse_vars);
 }
 
 static inline void setblock_command(struct parse_vars *parse_vars)
 {
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
-    next_word(&parse_vars);
+    next_word(parse_vars);
 }
 
 static inline void print_command(struct parse_vars *parse_vars)
 {
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
-    next_word(&parse_vars);
+    next_word(parse_vars);
 }
 
 static inline void create_var_command(struct parse_vars *parse_vars)
 {
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
-    next_word(&parse_vars);
+    next_word(parse_vars);
 }
 
 static inline void command_jump(struct parse_vars *parse_vars, enum jump_type jump_type, uint32_t address)
@@ -69,8 +69,8 @@ static inline void command_jump(struct parse_vars *parse_vars, enum jump_type ju
     // Jumps back to before function
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], &jump_type_bool, 1); // Sets jump point as reference
-    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + 1], &address, ADDRESS_BYTES);
-    next_word(&parse_vars);
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + 1], (char *)&address, ADDRESS_BYTES);
+    next_word(parse_vars);
 }
 
 static inline void
@@ -230,7 +230,7 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
             .function_array = function_array_init(),
             .cur_word = 0,
             .parsed = malloc(sizeof(char) * WORD_SIZE * BUFFER),
-            .token_buffer = malloc(sizeof(struct token *) * 16),
+            .token_buffer = malloc(sizeof(struct token *) * 64),
             .token_buffer_count = 0,
         };
 
@@ -457,7 +457,7 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
         }
     }
     // TODO: fix this free, it crashes the program sometimes, double free?
-    // free(parse_vars.token_buffer);
+    free(parse_vars.token_buffer);
     variable_array_free(parse_vars.variable_array);
     function_array_free(parse_vars.function_array);
 
