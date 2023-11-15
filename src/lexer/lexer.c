@@ -29,7 +29,7 @@ char **separate_file(FILE *const file, size_t *word_count)
     // FIX if buffer breaks in the middle of a word (move file back by count?)
     while ((buffer_size = fread(buffer, sizeof(char), BUFFER_SIZE, file)) != 0)
     {
-        for (int i = 0; i < buffer_size; i++)
+        for (size_t i = 0; i < buffer_size; i++)
         {
             if (chrcmp(";()[]{}+-*/=<>&,", buffer[i]))
             {
@@ -200,6 +200,11 @@ struct token_list *lex_file(FILE *const file)
             struct token token = {.text = words[i], .type = BLOCK_END, .line = line};
             token_list_push_back(token_list, token);
         }
+        else if (words[i][0] == ',')
+        {
+            struct token token = {.text = words[i], .type = SEPARATOR, .line = line};
+            token_list_push_back(token_list, token);
+        }
         else
         {
             struct token token = {.text = words[i], .type = NAME, .line = line};
@@ -223,7 +228,7 @@ void token_list_destroy(struct token_list *const token_list)
     free(token_list);
 }
 
-struct token_list *token_list_init()
+struct token_list *token_list_init(void)
 {
     struct token_list *token_list = malloc(sizeof(token_list));
     token_list->tokens = NULL;

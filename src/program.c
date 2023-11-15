@@ -9,6 +9,8 @@
 
 #include "lexer/lexer.h"
 #include "parser/parser.h"
+#include "parser/variable_array.h"
+#include "helpers.h"
 
 #define KILOBYTE 1000
 #define MEGABYTE KILOBYTE * 1000
@@ -47,19 +49,6 @@ static void program_add_var(struct program *const program, enum variable_type va
     memset((char *)program->stack + position, 0, get_size_of_type(variable_type));
 }
 
-static inline int compare_bytes(char *x, char *y, size_t bytes)
-{
-    for (size_t i = 0; i < bytes; i++)
-    {
-        if (x[i] ^ y[i])
-        {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
 int program_run(struct program *const program)
 {
     clock_t exec_time;
@@ -82,7 +71,7 @@ int program_run(struct program *const program)
     else
     {
         struct token_list *token_list = lex_file(program->fptr);
-        parsed_program = parse_tokens(token_list);
+        parsed_program = parse_tokens(token_list, 0);
         token_list_destroy(token_list);
         if (parsed_program == NULL)
         {
@@ -123,7 +112,7 @@ int program_run(struct program *const program)
               transpile);
     }
 
-    for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
+    for (program->cur_line = 0; compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
     {
         if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
         {
@@ -366,13 +355,37 @@ int program_run(struct program *const program)
                 }
             }
         }
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_JUMP, COMMAND_BYTES))
+        {
+            char jump_type = *(char *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint32_t line = *(uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 1];
+            if (jump_type == 1) // Jump as ref
+            {
+                program->cur_line = *(uint32_t *)((char *)(program->stack) + line);
+            }
+            else // Jump as value
+            {
+                program->cur_line = line;
+            }
+        }
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_SETBLOCK, COMMAND_BYTES))
+        {
+            uint32_t *address = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            program->stack = (char *)program->stack + *address;
+            program->stack_offset = *address;
+        }
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES))
+        {
+            program->stack = (char *)program->stack - program->stack_offset;
+            program->stack_offset = 0;
+        }
     }
     if (program->options & TRANSPILE_C)
     {
         fputs("}\n", transpile);
     }
 
-    free(parsed_program);
+    // free(parsed_program);
 
     exec_time = clock() - exec_time;
     double time_taken = (((double)exec_time) / CLOCKS_PER_SEC) * 1000;

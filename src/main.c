@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "program.h"
-#include "variable_array.h"
 
 int main(int argc, char const *argv[])
 {

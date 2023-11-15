@@ -2,8 +2,7 @@
 #define AURORA_PROGRAM_H
 
 #include <stdio.h>
-
-#include "variable_array.h"
+#include <stdint.h>
 
 struct token_list;
 
@@ -22,6 +21,7 @@ struct program
     FILE *fptr;
     const char *file_path;
     void *stack;
+    int32_t stack_offset;
     long long int cur_line;
     char options;
 };

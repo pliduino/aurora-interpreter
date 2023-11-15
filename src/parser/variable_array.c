@@ -31,7 +31,7 @@ int variable_array_add(struct variable_array *const variable_array, struct varia
     return 0;
 }
 
-size_t get_size_of_type(enum variable_type variable_type)
+uint32_t get_size_of_type(enum variable_type variable_type)
 {
     switch (variable_type)
     {
@@ -105,25 +105,6 @@ void variable_array_free(struct variable_array *const variable_array)
 
     free(variable_array->data);
     free(variable_array);
-}
-
-void variable_print(struct variable *variable)
-{
-    switch (variable->type)
-    {
-    case I32:
-        printf("    %s: %d\n", variable->name, *(int32_t *)variable->data);
-        break;
-    case F32:
-        printf("    %s: %f\n", variable->name, *(float *)variable->data);
-        break;
-    case INVALID:
-        printf("Invalid variable");
-        break;
-    default:
-        printf("Not implemented");
-        break;
-    }
 }
 
 enum variable_type variable_type_from_string(const char *const string)

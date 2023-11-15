@@ -25,13 +25,13 @@ struct variable
     char *name;
     enum variable_type type;
     void *data;
-    size_t position;
+    uint32_t position;
 };
 
 struct variable_array
 {
     struct variable *data;
-    size_t head;
+    uint32_t head;
     size_t size;
 };
 
@@ -45,12 +45,10 @@ int64_t variable_array_find(const struct variable_array *const variable_array, c
 
 void variable_array_free(struct variable_array *const variable_array);
 
-void variable_print(struct variable *variable);
-
 enum variable_type variable_type_from_string(const char *const string);
 
 char *variable_type_to_string(enum variable_type variable_type);
 
-size_t get_size_of_type(enum variable_type variable_type);
+uint32_t get_size_of_type(enum variable_type variable_type);
 
 #endif

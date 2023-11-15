@@ -21,6 +21,7 @@ enum token_type
     PRINT,
     ENDLINE,
     FUNCTION,
+    SEPARATOR,
 };
 
 struct token
