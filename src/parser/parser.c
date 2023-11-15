@@ -38,7 +38,43 @@ inline static void next_word(struct parse_vars *parse_vars)
     }
 }
 
-inline static void create_var(struct parse_vars *parse_vars)
+static inline void backblock_command(struct parse_vars *parse_vars)
+{
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
+    next_word(&parse_vars);
+}
+
+static inline void setblock_command(struct parse_vars *parse_vars)
+{
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
+    next_word(&parse_vars);
+}
+
+static inline void print_command(struct parse_vars *parse_vars)
+{
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
+    next_word(&parse_vars);
+}
+
+static inline void create_var_command(struct parse_vars *parse_vars)
+{
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
+    next_word(&parse_vars);
+}
+
+static inline void command_jump(struct parse_vars *parse_vars, enum jump_type jump_type, uint32_t address)
+{
+    char jump_type_bool = jump_type;
+
+    // Jumps back to before function
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], &jump_type_bool, 1); // Sets jump point as reference
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + 1], &address, ADDRESS_BYTES);
+    next_word(&parse_vars);
+}
+
+static inline void
+create_var(struct parse_vars *parse_vars)
 {
     if (parse_vars->token_buffer_count < 3)
     {
@@ -68,7 +104,6 @@ inline static void create_var(struct parse_vars *parse_vars)
     }
 
     int16_t two_byte_type = (int16_t)variable.type;
-
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);                                                // Command
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&(parse_vars->variable_array->head), ADDRESS_BYTES); // Var Address
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);         // Var type
@@ -400,9 +435,6 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], "\0", 1);
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], (char *)&parse_vars.function_array->data[function_index].call_position, 4);
                     next_word(&parse_vars);
-
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES);
-                    next_word(&parse_vars);
                 }
                 else if (parse_vars.token_buffer[1]->type == ADD)
                 {
@@ -424,6 +456,7 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
             parse_vars.token_buffer_count++;
         }
     }
+    // TODO: fix this free, it crashes the program sometimes, double free?
     // free(parse_vars.token_buffer);
     variable_array_free(parse_vars.variable_array);
     function_array_free(parse_vars.function_array);

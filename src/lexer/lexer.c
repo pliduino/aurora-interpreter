@@ -23,6 +23,7 @@ char **separate_file(FILE *const file, size_t *word_count)
     char *buffer = malloc(sizeof(char) * BUFFER_SIZE);
     char **words = malloc(sizeof(char *) * WORD_BUFFER_SIZE);
     char **temp = NULL;
+    char skip = 0;
     (*word_count) = 0;
 
     size_t buffer_size;
@@ -31,7 +32,20 @@ char **separate_file(FILE *const file, size_t *word_count)
     {
         for (size_t i = 0; i < buffer_size; i++)
         {
-            if (chrcmp(";()[]{}+-*/=<>&,", buffer[i]))
+            if (skip == 1)
+            {
+                if (chrcmp("\n\r", buffer[i]))
+                {
+                    skip == 0;
+                }
+                continue;
+            }
+
+            if (buffer[i] == '#' && skip == 0)
+            {
+                skip = 1;
+            }
+            else if (chrcmp(";()[]{}+-*/=<>&,", buffer[i]) && skip == 0)
             {
                 // Adds word before symbol
                 if (count > 0)

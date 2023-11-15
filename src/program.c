@@ -361,6 +361,7 @@ int program_run(struct program *const program)
             uint32_t line = *(uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 1];
             if (jump_type == 1) // Jump as ref
             {
+                uint32_t *value_address = (uint32_t *)((char *)(program->stack) + line);
                 program->cur_line = *(uint32_t *)((char *)(program->stack) + line);
             }
             else // Jump as value

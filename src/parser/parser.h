@@ -22,6 +22,11 @@
 /// 2 1 4
 /// Jump isRef address
 #define C_JUMP "\x00\x20"
+enum jump_type
+{
+    VALUE = 0,
+    REFERENCE = 1,
+};
 
 /// 2 4
 /// EnterBlock StackAddr

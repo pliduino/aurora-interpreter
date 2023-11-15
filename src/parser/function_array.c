@@ -18,6 +18,7 @@ int64_t function_array_find(const struct function_array *const function_array, c
 {
     for (uint32_t i = 0; i < function_array->size; i++)
     {
+        // TODO: Sometimes crashes
         if (strcmp(function_array->data[i].name, name) == 0)
         {
             return i;
@@ -53,5 +54,7 @@ void function_array_free(struct function_array *function_array)
     }
 
     free(function_array->data);
+
+    // TODO: Sometimes crashes
     // free(function_array);
 }
