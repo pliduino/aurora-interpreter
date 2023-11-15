@@ -28,7 +28,7 @@ int64_t function_array_find(const struct function_array *const function_array, c
     return -1;
 }
 
-void function_array_add(struct function_array *function_array, struct function function)
+int function_array_add(struct function_array *const restrict function_array, const struct function function)
 {
     if (function_array_find(function_array, function.name) >= 0)
     {
@@ -41,7 +41,7 @@ void function_array_add(struct function_array *function_array, struct function f
     return 0;
 }
 
-void function_array_free(struct function_array *function_array)
+void function_array_free(struct function_array *const restrict function_array)
 {
     if (function_array == NULL)
     {

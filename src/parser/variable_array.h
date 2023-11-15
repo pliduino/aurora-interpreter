@@ -39,7 +39,7 @@ struct variable_array *variable_array_init(void);
 
 int variable_array_add(struct variable_array *const variable_array, struct variable variant);
 
-struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index);
+struct variable *variable_array_get_index(const struct variable_array *const variable_array, const size_t index);
 
 int64_t variable_array_find(const struct variable_array *const variable_array, const char *const name);
 
@@ -47,8 +47,8 @@ void variable_array_free(struct variable_array *const variable_array);
 
 enum variable_type variable_type_from_string(const char *const string);
 
-char *variable_type_to_string(enum variable_type variable_type);
+char *variable_type_to_string(const enum variable_type variable_type);
 
-uint32_t get_size_of_type(enum variable_type variable_type);
+uint32_t get_size_of_type(const enum variable_type variable_type);
 
 #endif

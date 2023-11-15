@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "program.h"
+#include "program/program.h"
 
 int main(int argc, char const *argv[])
 {

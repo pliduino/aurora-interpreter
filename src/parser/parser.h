@@ -1,5 +1,5 @@
-#ifndef AURORA_PARSER
-#define AURORA_PARSER
+#ifndef PARSER_H
+#define PARSER_H
 
 #include <stdint.h>
 
@@ -81,6 +81,6 @@ Function Line Scope_Start, Scope_End
 END OF PROGRAM = 0
 */
 
-char *parse_tokens(struct token_list *token_list, int32_t memory_offset);
+char *parse_tokens(const struct token_list *const token_list, int32_t memory_offset);
 
-#endif
+#endif // PARSER_H

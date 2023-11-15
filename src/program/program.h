@@ -21,15 +21,22 @@ struct program
     FILE *fptr;
     const char *file_path;
     void *stack;
-    int32_t stack_offset;
+    struct stack_offset *stack_offset;
     long long int cur_line;
-    char options;
+    char options; // Can be expanded to 8 bytes with no cost if needed (padding)
 };
 
-struct program *program_init(const char *const file_path);
+struct stack_offset
+{
+    uint32_t value;
+    struct stack_offset *previous_offset;
+};
+
+struct program *
+program_init(const char *const file_path);
 
 int program_run(struct program *const program);
 
-void program_close(const struct program *const program);
+void program_close(struct program *const program);
 
 #endif

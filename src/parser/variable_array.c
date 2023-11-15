@@ -14,7 +14,7 @@ struct variable_array *variable_array_init(void)
     return variable_array;
 }
 
-/// @brief a \n a
+/// @brief
 /// @param variable_array
 /// @param variable
 /// @return -1 if variable already exists 0 if successful
@@ -31,7 +31,7 @@ int variable_array_add(struct variable_array *const variable_array, struct varia
     return 0;
 }
 
-uint32_t get_size_of_type(enum variable_type variable_type)
+uint32_t get_size_of_type(const enum variable_type variable_type)
 {
     switch (variable_type)
     {
@@ -67,7 +67,7 @@ uint32_t get_size_of_type(enum variable_type variable_type)
     }
 }
 
-struct variable *variable_array_get_index(const struct variable_array *const variable_array, size_t index)
+struct variable *variable_array_get_index(const struct variable_array *const variable_array, const size_t index)
 {
     if (index >= variable_array->size)
     {
@@ -162,7 +162,7 @@ enum variable_type variable_type_from_string(const char *const string)
     return INVALID;
 }
 
-char *variable_type_to_string(enum variable_type variable_type)
+char *variable_type_to_string(const enum variable_type variable_type)
 {
     switch (variable_type)
     {

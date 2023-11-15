@@ -222,7 +222,7 @@ inline static void assign(struct parse_vars *parse_vars)
     }
 }
 
-char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
+char *parse_tokens(const struct token_list *const token_list, int32_t stack_offset)
 {
     struct parse_vars parse_vars =
         {
@@ -332,7 +332,7 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
                 // Jumps back to before function
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], "\1", 1); // Sets jump point as reference
-                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], "\4", ADDRESS_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], "\0", ADDRESS_BYTES);
                 next_word(&parse_vars);
 
                 // Setting to where to jump to during definition
@@ -412,14 +412,6 @@ char *parse_tokens(struct token_list *token_list, int32_t stack_offset)
                     next_word(&parse_vars);
 
                     int16_t two_byte_type = (int16_t)I32;
-
-                    // Sets old head value
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES);                                             // Command
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&parse_vars.variable_array->head, ADDRESS_BYTES); // Old head value
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);      // Var type
-                    parse_vars.variable_array->head += get_size_of_type(I32);
-                    next_word(&parse_vars);
-
                     int32_t jump_position = parse_vars.cur_word + 2;
 
                     // Sets jump back

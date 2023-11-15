@@ -8,3 +8,4 @@
 - [ ] Fix Sconstruct to compile correctly on all platforms/compilers
 - [ ] Add highlight to .ar code
 - [ ] Properties
+- [ ] Add iteration depth to parser and make parse_vars global

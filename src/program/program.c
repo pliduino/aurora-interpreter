@@ -14,12 +14,13 @@
 
 #define KILOBYTE 1000
 #define MEGABYTE KILOBYTE * 1000
+#define STACK_SIZE 1 * MEGABYTE
 
 void program_print_error(const struct program *const program, const char *const error_format, ...)
 {
     va_list argptr;
     va_start(argptr, error_format);
-    fprintf(stderr, "   %s::%lld: ", program->file_path, program->cur_line);
+    fprintf(stderr, "   %s:%lld: ", program->file_path, program->cur_line);
     vfprintf(stderr, error_format, argptr);
     va_end(argptr);
 }
@@ -36,9 +37,36 @@ struct program *program_init(const char *const file_path)
         return NULL;
     }
 
-    program->stack = malloc(1 * MEGABYTE);
+    program->stack = malloc(STACK_SIZE);
+
+    program->stack_offset = malloc(sizeof(struct stack_offset));
+    program->stack_offset->value = 0;
+    program->stack_offset->previous_offset = NULL;
+
     program->cur_line = 0;
     return program;
+}
+
+// TODO: No checks are made to see if stack was exceeded
+static inline void program_add_stack_offset(struct program *const program, uint32_t offset)
+{
+    struct stack_offset *new_offset = malloc(sizeof(struct stack_offset));
+    new_offset->value = offset;
+    new_offset->previous_offset = program->stack_offset;
+    program->stack = (char *)program->stack + program->stack_offset->value;
+    program->stack_offset = new_offset;
+}
+
+static inline void program_remove_stack_offset(struct program *const program)
+{
+    if (program->stack_offset->previous_offset == NULL)
+    {
+        return;
+    }
+    struct stack_offset *new_offset = program->stack_offset->previous_offset;
+    program->stack = (char *)program->stack - program->stack_offset->value;
+    free(program->stack_offset);
+    program->stack_offset = new_offset;
 }
 
 /// @brief Adds variable to program
@@ -373,13 +401,11 @@ int program_run(struct program *const program)
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_SETBLOCK, COMMAND_BYTES))
         {
             uint32_t *address = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            program->stack = (char *)program->stack + *address;
-            program->stack_offset = *address;
+            program_add_stack_offset(program, *address);
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES))
         {
-            program->stack = (char *)program->stack - program->stack_offset;
-            program->stack_offset = 0;
+            program_remove_stack_offset(program);
         }
     }
     if (program->options & TRANSPILE_C)
@@ -397,9 +423,18 @@ int program_run(struct program *const program)
 
 /// @brief Closes file and frees variables
 /// @param program
-void program_close(const struct program *const program)
+void program_close(struct program *const program)
 {
     fclose(program->fptr);
+
     free(program->stack);
+    while (program->stack_offset->previous_offset != NULL)
+    {
+        struct stack_offset *temp = program->stack_offset->previous_offset;
+        free(program->stack_offset);
+        program->stack_offset = temp;
+    }
+    free(program->stack_offset);
+
     free(program);
 }
