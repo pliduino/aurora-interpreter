@@ -100,7 +100,7 @@ int program_run(struct program *const program)
     {
         struct token_list *token_list = lex_file(program->fptr);
 
-        parsed_program = parse_tokens(token_list, 0);
+        parsed_program = parse_tokens(token_list, NULL, NULL);
         token_list_destroy(token_list);
         if (parsed_program == NULL)
         {
@@ -387,7 +387,9 @@ int program_run(struct program *const program)
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_JUMP, COMMAND_BYTES))
         {
             char jump_type = *(char *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+
             uint32_t line = *(uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 1];
+
             if (jump_type == 1) // Jump as ref
             {
                 uint32_t *value_address = (uint32_t *)((char *)(program->stack) + line);
@@ -397,6 +399,9 @@ int program_run(struct program *const program)
             {
                 program->cur_line = line;
             }
+
+            // -1 because for loop will jump a line
+            program->cur_line -= 1;
         }
         else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_SETBLOCK, COMMAND_BYTES))
         {

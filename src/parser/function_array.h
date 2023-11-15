@@ -5,14 +5,21 @@
 
 enum variable_type;
 
+struct argument
+{
+    char *name;
+    enum variable_type variable_type;
+};
+
 struct function
 {
     char *name;
-    enum variable_type *argument_types;
+    struct argument *arguments;
     size_t argument_count;
     enum variable_type *return_type;
     size_t return_count;
-    int32_t call_position;
+    uint32_t call_position;
+    uint8_t iteration_depth;
 };
 
 struct function_array

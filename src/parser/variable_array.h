@@ -24,7 +24,6 @@ struct variable
 {
     char *name;
     enum variable_type type;
-    void *data;
     uint32_t position;
 };
 

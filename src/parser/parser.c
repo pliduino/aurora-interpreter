@@ -66,9 +66,8 @@ static inline void command_jump(struct parse_vars *parse_vars, enum jump_type ju
 {
     char jump_type_bool = jump_type;
 
-    // Jumps back to before function
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
-    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], &jump_type_bool, 1); // Sets jump point as reference
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], &jump_type_bool, 1);
     set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + 1], (char *)&address, ADDRESS_BYTES);
     next_word(parse_vars);
 }
@@ -111,7 +110,87 @@ create_var(struct parse_vars *parse_vars)
     next_word(parse_vars);
 }
 
-inline static void assign(struct parse_vars *parse_vars)
+static inline void command_assign(struct parse_vars *parse_vars, enum variable_type type, uint32_t position, char *value_text)
+{
+    int16_t two_byte_type = (int16_t)type;
+
+    // Assign
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE], C_ASSIGN, COMMAND_BYTES);
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&position, ADDRESS_BYTES);
+    set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);
+
+    switch (type)
+    {
+    case BOOL:
+        char value_bool;
+        if (strcmp(value_text, "true") == 0)
+        {
+            value_bool = 1;
+        }
+        else if (strcmp(value_text, "false") == 0)
+        {
+            value_bool = 0;
+        }
+        else
+        {
+            return;
+        }
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_bool, get_size_of_type(BOOL));
+        break;
+    case CHAR:
+        char value_char = (char)atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_char, get_size_of_type(CHAR));
+        break;
+    case I8:
+        int8_t value_int8 = (int8_t)atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_int8, get_size_of_type(I8));
+        break;
+    case I16:
+        int16_t value_int16 = (int16_t)atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_int16, get_size_of_type(I16));
+        break;
+    case I32:
+        int32_t value_int32 = atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_int32, get_size_of_type(I32));
+        break;
+    case I64:
+        int64_t value_int64 = atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_int64, get_size_of_type(I64));
+        break;
+    case U8:
+        uint8_t value_uint8 = (uint8_t)atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_uint8, get_size_of_type(U8));
+        break;
+    case U16:
+        uint16_t value_uint16 = (uint16_t)atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_uint16, get_size_of_type(U16));
+        break;
+    case U32:
+        uint32_t value_uint32 = atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_uint32, get_size_of_type(U32));
+        break;
+    case U64:
+        uint64_t value_uint64 = atoi(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_uint64, get_size_of_type(U64));
+        break;
+    case F32:
+        float value_float = (float)atof(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_float, get_size_of_type(F32));
+        break;
+    case F64:
+        double value_double = atof(value_text);
+        set_bytes(&parse_vars->parsed[parse_vars->cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&value_double, get_size_of_type(F64));
+        break;
+    case INVALID:
+        break;
+    default:
+        break;
+    }
+
+    next_word(parse_vars);
+}
+
+static inline void assign(struct parse_vars *parse_vars)
 {
     if (parse_vars->token_buffer[0]->type != NAME)
     {
@@ -222,11 +301,15 @@ inline static void assign(struct parse_vars *parse_vars)
     }
 }
 
-char *parse_tokens(const struct token_list *const token_list, int32_t stack_offset)
+/// @brief
+/// @param token_list
+/// @param pre_init_variables Gets ownership, no need to free
+/// @param pre_init_function_array Does not get ownership
+/// @return
+char *parse_tokens(const struct token_list *const token_list, struct variable_array *pre_init_variables, struct function_array *pre_init_function_array)
 {
     struct parse_vars parse_vars =
         {
-            .variable_array = variable_array_init(),
             .function_array = function_array_init(),
             .cur_word = 0,
             .parsed = malloc(sizeof(char) * WORD_SIZE * BUFFER),
@@ -234,7 +317,8 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
             .token_buffer_count = 0,
         };
 
-    parse_vars.variable_array->head = stack_offset;
+    parse_vars.variable_array = pre_init_variables == NULL ? variable_array_init() : pre_init_variables;
+
     char inside_block = 0;
 
     for (size_t i = 0; i < token_list->count; i++)
@@ -262,25 +346,32 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
                     {
                         .name = parse_vars.token_buffer[1]->text,
                         .argument_count = 0,
+                        .arguments = NULL,
                         .return_count = 0,
+                        .return_type = NULL,
                     };
                 size_t function_block_start_index = 3;
                 while (parse_vars.token_buffer[function_block_start_index]->type != CALLER_END)
                 {
+                    struct argument argument;
                     switch (function_block_start_index % 3)
                     {
                     case 0:
                         if (parse_vars.token_buffer[function_block_start_index]->type != NAME)
                         {
-                            function.argument_count++;
                             fprintf(stderr, "%s:%d: No argument type found!\n", __FILE__, __LINE__);
                         }
+                        function.argument_count++;
+                        argument.variable_type = variable_type_from_string(parse_vars.token_buffer[function_block_start_index]->text);
                         break;
                     case 1:
                         if (parse_vars.token_buffer[function_block_start_index]->type != NAME)
                         {
                             fprintf(stderr, "%s:%d: No argument name found!\n", __FILE__, __LINE__);
                         }
+                        argument.name = parse_vars.token_buffer[function_block_start_index]->text;
+                        function.arguments = realloc(function.arguments, sizeof(struct argument) * function.argument_count);
+                        function.arguments[function.argument_count - 1] = argument;
                         break;
                     case 2:
                         if (parse_vars.token_buffer[function_block_start_index]->type != SEPARATOR)
@@ -310,7 +401,21 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
                 func_token_list.count = parse_vars.token_buffer_count - (function_block_start_index + 2);
                 func_token_list.tokens = parse_vars.token_buffer[function_block_start_index + 2];
 
-                char *func_contents = parse_tokens(&func_token_list, 8);
+                struct variable_array *func_variables = variable_array_init();
+                func_variables->head += get_size_of_type(I32); // This value is reserved for the jump back
+                for (size_t j = 0; j < function.argument_count; j++)
+                {
+                    struct variable argument =
+                        {
+                            .name = function.arguments[j].name,
+                            .type = function.arguments[j].variable_type,
+                            .position = func_variables->head,
+                        };
+                    variable_array_add(func_variables, argument);
+                    func_variables->head += get_size_of_type(argument.type);
+                }
+
+                char *func_contents = parse_tokens(&func_token_list, func_variables, NULL);
 
                 // Jumps to after function definition
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
@@ -332,7 +437,7 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
                 // Jumps back to before function
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
                 set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], "\1", 1); // Sets jump point as reference
-                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], "\0", ADDRESS_BYTES);
+                set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], "\x00\x00\x00\x00", ADDRESS_BYTES);
                 next_word(&parse_vars);
 
                 // Setting to where to jump to during definition
@@ -412,20 +517,33 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
                     next_word(&parse_vars);
 
                     int16_t two_byte_type = (int16_t)I32;
-                    int32_t jump_position = parse_vars.cur_word + 2;
+                    int32_t jump_position = parse_vars.cur_word + 3;
 
                     // Sets jump back
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_ASSIGN, COMMAND_BYTES);
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], (char *)&parse_vars.variable_array->head, ADDRESS_BYTES);            // Command
+                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], "\x00\x00\x00\x00", ADDRESS_BYTES);                                  // Command
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES], (char *)&two_byte_type, TYPE_BYTES);                 // Var type
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES], (char *)&jump_position, ADDRESS_BYTES); // Jumps to after jump
-                    parse_vars.variable_array->head += get_size_of_type(I32);
                     next_word(&parse_vars);
+
+                    uint32_t func_stack_head = get_size_of_type(I32);
+
+                    for (size_t j = 0; j < parse_vars.function_array->data[function_index].argument_count; j++)
+                    {
+                        if (j > 0 && parse_vars.token_buffer[1 + 2 * j]->type != SEPARATOR)
+                        {
+                            fprintf(stderr, "No separator found!");
+                            exit(-1);
+                        }
+
+                        command_assign(&parse_vars, parse_vars.function_array->data[function_index].arguments[j].variable_type, func_stack_head, parse_vars.token_buffer[2 + 2 * j]->text);
+                        func_stack_head = get_size_of_type(two_byte_type);
+                    }
 
                     // Jumps to function
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_JUMP, COMMAND_BYTES);
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES], "\0", 1);
-                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], (char *)&parse_vars.function_array->data[function_index].call_position, 4);
+                    set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE + COMMAND_BYTES + 1], (char *)&parse_vars.function_array->data[function_index].call_position, ADDRESS_BYTES);
                     next_word(&parse_vars);
                 }
                 else if (parse_vars.token_buffer[1]->type == ADD)
@@ -448,7 +566,7 @@ char *parse_tokens(const struct token_list *const token_list, int32_t stack_offs
             parse_vars.token_buffer_count++;
         }
     }
-    // TODO: fix this free, it crashes the program sometimes, double free?
+
     free(parse_vars.token_buffer);
     variable_array_free(parse_vars.variable_array);
     function_array_free(parse_vars.function_array);

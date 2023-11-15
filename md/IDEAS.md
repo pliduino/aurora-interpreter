@@ -1,5 +1,7 @@
 # Ideas
-- [ ] Tagged enums
+- [ ] Tagged unions
+- [ ] Enums
+- [ ] Templates
 - [ ] Scopes {}
 - [ ] Structs
 - [ ] Classes
@@ -9,3 +11,5 @@
 - [ ] Add highlight to .ar code
 - [ ] Properties
 - [ ] Add iteration depth to parser and make parse_vars global
+- [ ] Inline
+- [ ] Statics

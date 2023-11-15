@@ -40,6 +40,8 @@ enum jump_type
 #define O_ADD "\x00\x01"
 
 struct token_list;
+struct variable_array;
+struct function_array;
 
 /*
 16 bytes
@@ -81,6 +83,6 @@ Function Line Scope_Start, Scope_End
 END OF PROGRAM = 0
 */
 
-char *parse_tokens(const struct token_list *const token_list, int32_t memory_offset);
+char *parse_tokens(const struct token_list *const token_list, struct variable_array *pre_init_variables, struct function_array *pre_init_function_array);
 
 #endif // PARSER_H

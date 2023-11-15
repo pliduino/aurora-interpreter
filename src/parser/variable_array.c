@@ -97,12 +97,11 @@ void variable_array_free(struct variable_array *const variable_array)
         return;
     }
 
-    for (size_t i = 0; i < variable_array->size; i++)
-    {
-        // These are freed with tokens
-        // free(variable_array->data[i].name);
-        free(variable_array->data[i].data);
-    }
+    // These are freed with tokens
+    // for (size_t i = 0; i < variable_array->size; i++)
+    // {
+    // free(variable_array->data[i].name);
+    // }
 
     free(variable_array->data);
     free(variable_array);
