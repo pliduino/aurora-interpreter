@@ -517,7 +517,7 @@ char *parse_tokens(const struct token_list *const token_list, struct variable_ar
                     next_word(&parse_vars);
 
                     int16_t two_byte_type = (int16_t)I32;
-                    int32_t jump_position = parse_vars.cur_word + 3;
+                    int32_t jump_position = parse_vars.cur_word + 2 + parse_vars.function_array->data[function_index].argument_count;
 
                     // Sets jump back
                     set_bytes(&parse_vars.parsed[parse_vars.cur_word * WORD_SIZE], C_ASSIGN, COMMAND_BYTES);

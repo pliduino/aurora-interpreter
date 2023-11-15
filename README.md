@@ -33,3 +33,4 @@ Currently supports assigning, printing and creating integer, float and char valu
 - [ ] Use LLVM instead of transpiler
 - [ ] Add flow control
 - [ ] Add loops
+- [ ] Add AST to lexer so parser can compound commands
