@@ -30,6 +30,7 @@ class
 | Symbol | Description |
 |:------:|:-----------:|
 | #      | Comment      |
+| fn | Function |
 
 
 , ; . [ ] ( ) { }
