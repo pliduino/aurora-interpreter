@@ -1,25 +1,23 @@
-#include <stdio.h>
 #include <malloc.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "program/program.h"
 
 int main(int argc, char const *argv[])
 {
-    static const char usestr[] =
-        "[-v verbose][-s strict][-c compile][-x execute][-t transpile]\n"
-        "Other options: \n"
-        "NB: -h gives more help!\n";
+    static const char usestr[] = "[-v verbose][-s strict][-c compile][-x execute][-t transpile]\n"
+                                 "Other options: \n"
+                                 "NB: -h gives more help!\n";
 
-    static const char fullhelp[] =
-        "\nOption summary:\n"
-        "   -v --verbose   - Prints line being parsed\n"
-        "   -s --strict    - Stops program in any error\n"
-        "   -c --compile   - Pre-compiles the program into bytecode\n"
-        "   -x --execute   - Runs pre-compiled bytecode\n"
-        "   -t --transpile - Transpiles code to C"
-        "   -h --help      - Prints this message\n";
+    static const char fullhelp[] = "\nOption summary:\n"
+                                   "   -v --verbose   - Prints line being parsed\n"
+                                   "   -s --strict    - Stops program in any error\n"
+                                   "   -c --compile   - Pre-compiles the program into bytecode\n"
+                                   "   -x --execute   - Runs pre-compiled bytecode\n"
+                                   "   -t --transpile - Transpiles code to C"
+                                   "   -h --help      - Prints this message\n";
 
     if (argc < 2)
     {

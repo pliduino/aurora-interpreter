@@ -30,9 +30,11 @@ struct function_array
 
 struct function_array *function_array_init(void);
 
-int64_t function_array_find(const struct function_array *const function_array, const char *const name);
+int64_t function_array_find(const struct function_array *const function_array,
+                            const char *const name);
 
-int function_array_add(struct function_array *const restrict function_array, const struct function function);
+int function_array_add(struct function_array *const restrict function_array,
+                       const struct function function);
 
 void function_array_free(struct function_array *const restrict function_array);
 

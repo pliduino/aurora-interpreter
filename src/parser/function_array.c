@@ -2,8 +2,8 @@
 
 #include <malloc.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 struct function_array *function_array_init(void)
 {
@@ -14,7 +14,8 @@ struct function_array *function_array_init(void)
     return function_array;
 }
 
-int64_t function_array_find(const struct function_array *const function_array, const char *const name)
+int64_t function_array_find(const struct function_array *const function_array,
+                            const char *const name)
 {
     for (uint32_t i = 0; i < function_array->size; i++)
     {
@@ -28,14 +29,16 @@ int64_t function_array_find(const struct function_array *const function_array, c
     return -1;
 }
 
-int function_array_add(struct function_array *const restrict function_array, const struct function function)
+int function_array_add(struct function_array *const restrict function_array,
+                       const struct function function)
 {
     if (function_array_find(function_array, function.name) >= 0)
     {
         return -1;
     }
 
-    function_array->data = realloc(function_array->data, (function_array->size + 1) * sizeof(struct function));
+    function_array->data =
+        realloc(function_array->data, (function_array->size + 1) * sizeof(struct function));
     function_array->data[function_array->size] = function;
     function_array->size++;
     return 0;
@@ -48,8 +51,10 @@ void function_array_free(struct function_array *const restrict function_array)
         return;
     }
 
-    // Names are provided by tokens so they are responsible to freeing them, if it causes problem later use strcpy and free here
-    // for (size_t i = 0; i < function_array->size; i++)
+    // Names are provided by tokens so they are responsible to freeing them, if
+    // it causes problem later use strcpy and free here
+    // for (size_t i = 0; i <
+    // function_array->size; i++)
     // {
     // free(function_array->data[i].name);
     // }

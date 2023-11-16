@@ -2,8 +2,8 @@
 
 #include <malloc.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 struct variable_array *variable_array_init(void)
 {
@@ -25,7 +25,8 @@ int variable_array_add(struct variable_array *const variable_array, struct varia
         return -1;
     }
 
-    variable_array->data = realloc(variable_array->data, (variable_array->size + 1) * sizeof(struct variable));
+    variable_array->data =
+        realloc(variable_array->data, (variable_array->size + 1) * sizeof(struct variable));
     variable_array->data[variable_array->size] = variable;
     variable_array->size++;
     return 0;
@@ -67,7 +68,8 @@ uint32_t get_size_of_type(const enum variable_type variable_type)
     }
 }
 
-struct variable *variable_array_get_index(const struct variable_array *const variable_array, const size_t index)
+struct variable *variable_array_get_index(const struct variable_array *const variable_array,
+                                          const size_t index)
 {
     if (index >= variable_array->size)
     {
@@ -77,7 +79,8 @@ struct variable *variable_array_get_index(const struct variable_array *const var
     return &variable_array->data[index];
 }
 
-int64_t variable_array_find(const struct variable_array *const variable_array, const char *const name)
+int64_t variable_array_find(const struct variable_array *const variable_array,
+                            const char *const name)
 {
     for (uint32_t i = 0; i < variable_array->size; i++)
     {

@@ -1,16 +1,16 @@
 #include "program.h"
 
-#include <stdlib.h>
 #include <malloc.h>
-#include <string.h>
-#include <stdint.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "helpers.h"
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "parser/variable_array.h"
-#include "helpers.h"
 
 #define KILOBYTE 1000
 #define MEGABYTE KILOBYTE * 1000
@@ -72,7 +72,8 @@ static inline void program_remove_stack_offset(struct program *const program)
 /// @brief Adds variable to program
 /// @param program
 /// @param variable_type
-static void program_add_var(struct program *const program, enum variable_type variable_type, size_t position)
+static void program_add_var(struct program *const program, enum variable_type variable_type,
+                            size_t position)
 {
     memset((char *)program->stack + position, 0, get_size_of_type(variable_type));
 }
@@ -100,7 +101,7 @@ int program_run(struct program *const program)
     {
         struct token_list *token_list = lex_file(program->fptr);
 
-        parsed_program = parse_tokens(token_list, NULL, NULL);
+        parsed_program = parse_tokens(token_list, NULL, NULL, program->options & STRICT);
         token_list_destroy(token_list);
         if (parsed_program == NULL)
         {
@@ -117,7 +118,9 @@ int program_run(struct program *const program)
             fprintf(stderr, "Could not open %s!\n", "test.arc");
             return -1;
         }
-        for (program->cur_line = 0; strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
+        for (program->cur_line = 0;
+             strncmp(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0;
+             program->cur_line++)
         {
             fwrite(&parsed_program[program->cur_line * WORD_SIZE], WORD_SIZE, 1, fp);
         }
@@ -141,12 +144,17 @@ int program_run(struct program *const program)
               transpile);
     }
 
-    for (program->cur_line = 0; compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0; program->cur_line++)
+    for (program->cur_line = 0;
+         compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_EOP, COMMAND_BYTES) == 0;
+         program->cur_line++)
     {
-        if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR, COMMAND_BYTES))
+        if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_CREATE_VAR,
+                          COMMAND_BYTES))
         {
-            uint32_t *position = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
+            uint32_t *position =
+                (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *var_type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE +
+                                                             COMMAND_BYTES + ADDRESS_BYTES];
             if (program->options & TRANSPILE_C)
             {
                 char *type_string = "";
@@ -199,16 +207,21 @@ int program_run(struct program *const program)
                 program_add_var(program, *var_type, *position);
             }
         }
-        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT, COMMAND_BYTES))
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_PRINT,
+                               COMMAND_BYTES))
         {
-            uint32_t *index = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
+            uint32_t *index =
+                (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE +
+                                                         COMMAND_BYTES + ADDRESS_BYTES];
             if (program->options & TRANSPILE_C)
             {
                 switch (*type)
                 {
                 case BOOL:
-                    sprintf(transpile_buffer, "if(var_%u){printf(\"True\n\")} else {printf(\"False\n\", );\n}", *index);
+                    sprintf(transpile_buffer,
+                            "if(var_%u){printf(\"True\n\")} else {printf(\"False\n\", );\n}",
+                            *index);
                     break;
                 case CHAR:
                     sprintf(transpile_buffer, "printf(\"%%c\\n\", var_%u);\n", *index);
@@ -304,24 +317,30 @@ int program_run(struct program *const program)
                 }
             }
         }
-        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_ASSIGN, COMMAND_BYTES))
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_ASSIGN,
+                               COMMAND_BYTES))
         {
-            int *assign_pointer = (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
-            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES];
-            void *value = &parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + ADDRESS_BYTES + TYPE_BYTES];
+            int *assign_pointer =
+                (int *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint16_t *type = (uint16_t *)&parsed_program[program->cur_line * WORD_SIZE +
+                                                         COMMAND_BYTES + ADDRESS_BYTES];
+            void *value = &parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES +
+                                          ADDRESS_BYTES + TYPE_BYTES];
 
             if (program->options & TRANSPILE_C)
             {
                 switch (*type)
                 {
                 case BOOL:
-                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer, (int32_t) * (int8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer,
+                            (int32_t) * (int8_t *)value);
                     break;
                 case CHAR:
                     sprintf(transpile_buffer, "var_%d = '%c';", *assign_pointer, *(char *)value);
                     break;
                 case I8:
-                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer, (int32_t) * (int8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %d;", *assign_pointer,
+                            (int32_t) * (int8_t *)value);
                     break;
                 case I16:
                     sprintf(transpile_buffer, "var_%d = %hd;", *assign_pointer, *(int16_t *)value);
@@ -333,7 +352,8 @@ int program_run(struct program *const program)
                     sprintf(transpile_buffer, "var_%d = %lld;", *assign_pointer, *(int64_t *)value);
                     break;
                 case U8:
-                    sprintf(transpile_buffer, "var_%d = %u;", *assign_pointer, (uint32_t) * (uint8_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %u;", *assign_pointer,
+                            (uint32_t) * (uint8_t *)value);
                     break;
                 case U16:
                     sprintf(transpile_buffer, "var_%d = %hu;", *assign_pointer, *(uint16_t *)value);
@@ -342,7 +362,8 @@ int program_run(struct program *const program)
                     sprintf(transpile_buffer, "var_%d = %u;", *assign_pointer, *(uint32_t *)value);
                     break;
                 case U64:
-                    sprintf(transpile_buffer, "var_%d = %llu;", *assign_pointer, *(uint64_t *)value);
+                    sprintf(transpile_buffer, "var_%d = %llu;", *assign_pointer,
+                            *(uint64_t *)value);
                     break;
                 case F32:
                     sprintf(transpile_buffer, "var_%d = %f;", *assign_pointer, *(float *)value);
@@ -384,11 +405,14 @@ int program_run(struct program *const program)
                 }
             }
         }
-        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_JUMP, COMMAND_BYTES))
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_JUMP,
+                               COMMAND_BYTES))
         {
-            char jump_type = *(char *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            char jump_type =
+                *(char *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
 
-            uint32_t line = *(uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 1];
+            uint32_t line =
+                *(uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES + 1];
 
             if (jump_type == 1) // Jump as ref
             {
@@ -403,12 +427,15 @@ int program_run(struct program *const program)
             // -1 because for loop will jump a line
             program->cur_line -= 1;
         }
-        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_SETBLOCK, COMMAND_BYTES))
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_SETBLOCK,
+                               COMMAND_BYTES))
         {
-            uint32_t *address = (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
+            uint32_t *address =
+                (uint32_t *)&parsed_program[program->cur_line * WORD_SIZE + COMMAND_BYTES];
             program_add_stack_offset(program, *address);
         }
-        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_BACKBLOCK, COMMAND_BYTES))
+        else if (compare_bytes(&parsed_program[program->cur_line * WORD_SIZE], C_BACKBLOCK,
+                               COMMAND_BYTES))
         {
             program_remove_stack_offset(program);
         }

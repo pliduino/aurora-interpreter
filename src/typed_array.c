@@ -1,7 +1,7 @@
 #include "typed_array.h"
 
-#include <stdio.h>
 #include <malloc.h>
+#include <stdio.h>
 
 struct typed_array *typed_array_init(enum typed_array_type type, int size)
 {
@@ -15,7 +15,6 @@ struct typed_array *typed_array_init(enum typed_array_type type, int size)
     case FLOAT:
         /* code */
         break;
-
     default:
         fprintf(stderr, "%s:%d - Type provided for array is invalid!", __FILE__, __LINE__);
         break;

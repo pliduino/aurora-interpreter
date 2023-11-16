@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define WORD_SIZE 16
@@ -83,6 +84,8 @@ Function Line Scope_Start, Scope_End
 END OF PROGRAM = 0
 */
 
-char *parse_tokens(const struct token_list *const token_list, struct variable_array *pre_init_variables, struct function_array *pre_init_function_array);
+char *parse_tokens(const struct token_list *const token_list,
+                   struct variable_array *pre_init_variables,
+                   struct function_array *pre_init_function_array, bool is_strict);
 
 #endif // PARSER_H

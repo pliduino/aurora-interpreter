@@ -1,8 +1,8 @@
 #ifndef AURORA_PROGRAM_H
 #define AURORA_PROGRAM_H
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
 struct token_list;
 
@@ -32,8 +32,7 @@ struct stack_offset
     struct stack_offset *previous_offset;
 };
 
-struct program *
-program_init(const char *const file_path);
+struct program *program_init(const char *const file_path);
 
 int program_run(struct program *const program);
 

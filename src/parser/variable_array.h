@@ -38,9 +38,11 @@ struct variable_array *variable_array_init(void);
 
 int variable_array_add(struct variable_array *const variable_array, struct variable variant);
 
-struct variable *variable_array_get_index(const struct variable_array *const variable_array, const size_t index);
+struct variable *variable_array_get_index(const struct variable_array *const variable_array,
+                                          const size_t index);
 
-int64_t variable_array_find(const struct variable_array *const variable_array, const char *const name);
+int64_t variable_array_find(const struct variable_array *const variable_array,
+                            const char *const name);
 
 void variable_array_free(struct variable_array *const variable_array);
 

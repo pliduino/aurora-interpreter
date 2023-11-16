@@ -45,7 +45,7 @@ char **separate_file(FILE *const file, size_t *word_count)
             {
                 skip = 1;
             }
-            else if (chrcmp(";()[]{}+-*/=<>&,", buffer[i]) && skip == 0)
+            else if (chrcmp(";()[]{}+-*/=<>&,\n", buffer[i]) && skip == 0)
             {
                 // Adds word before symbol
                 if (count > 0)
@@ -249,6 +249,10 @@ struct token_list *lex_file(FILE *const file)
             strcpy(token.text, words[i]);
             token_list_push_back(token_list, token);
         }
+        else if (words[i][0] == '\n')
+        {
+            line++;
+        }
         else
         {
             struct token token = {.type = NAME, .line = line};
@@ -270,7 +274,8 @@ struct token_list *lex_file(FILE *const file)
 void token_list_push_back(struct token_list *const token_list, const struct token token)
 {
     token_list->count++;
-    token_list->tokens = realloc(token_list->tokens, sizeof(struct token_list) * (token_list->count));
+    token_list->tokens =
+        realloc(token_list->tokens, sizeof(struct token_list) * (token_list->count));
     token_list->tokens[token_list->count - 1] = token;
 }
 
