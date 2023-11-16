@@ -1,6 +1,6 @@
 # Aurora Interpreter
 
-Interpreter made in C.
+Interpreter made in C with 0 dependencies.
 
 A lexer turns your file into tokens which in turn get parsed into a 128 bit instruction to be used by the interpreter.
 
