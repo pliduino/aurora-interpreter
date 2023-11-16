@@ -22,6 +22,7 @@ Currently supports assigning, printing and creating integer, float and char valu
 
 ## Options
 ```
+  -s --strict    -> Stops the program instead of just ignoring faulty line if it finds any error
   -c --compile   -> Pre-compiles code into bytecode
   -x --execute   -> Executes pre-compiled code
   -t --transpile -> Transpiles your code to C (Does not support function for now)
