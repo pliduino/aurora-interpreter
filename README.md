@@ -1,4 +1,4 @@
-# Check its sucessor [here](https://github.com/pliduino/aurora-compiler)
+# Check its successor [here](https://github.com/pliduino/aurora-compiler)
 
 # ~~Aurora Interpreter~~
 
